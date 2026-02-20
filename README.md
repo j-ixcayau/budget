@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Budget App
 
-## Getting Started
+A minimal, personal finance dashboard built with Next.js, Firebase, and Tailwind CSS.
 
-First, run the development server:
+## Features
+
+- **Dashboard**: Net worth trend, expense categories, and monthly summaries.
+- **Transactions**: Log income/expenses with category and currency support.
+- **Recurring Expenses**: Manage monthly bills with pending reminders on the dashboard.
+- **Assets & Liabilities**: Track your cash, crypto, and debts.
+- **Multicurrency**: Support for Q, USD, and EUR with manual conversion rates.
+- **Mobile Friendly**: Responsive sidebar and collapsible navigation.
+
+## Setup
+
+1. **Clone the repository**
+2. **Install dependencies**: `npm install`
+3. **Configure Environment**: 
+   - Create a `.env.local` file from `.env.local.example`.
+   - Add your Firebase project credentials.
+4. **Enable Firebase Services**:
+   - Enable **Authentication** (Email/Password).
+   - Enable **Firestore Database**.
+
+## Development
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Hosting Options
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Option 1: Vercel (Recommended)
+Next.js is built by Vercel, so it offers the most seamless deployment experience.
 
-## Learn More
+1. Create a [Vercel](https://vercel.com) account.
+2. Click **New Project** and import your GitHub repository.
+3. In **Environment Variables**, add everything from your `.env.local`.
+4. Click **Deploy**. Vercel will handle the build and give you a production URL.
 
-To learn more about Next.js, take a look at the following resources:
+### Option 2: Firebase Hosting
+Since you are already using Firebase, you can keep your hosting in the same project.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Initialize Hosting in your local project:
+   ```bash
+   firebase init hosting
+   ```
+   - Select your project.
+   - For "Public directory", type `.next` (or keep default `public` and Next.js will handle it).
+   - For "Configure as a single-page app", say **Yes**.
+2. To deploy:
+   ```bash
+   npm run build
+   firebase deploy --only hosting
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> [!NOTE]
+> For Next.js App Router features (like dynamic SSR), Vercel is much easier to manage than Firebase Hosting.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Technical Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Framework**: Next.js 15 (App Router)
+- **Database**: Firebase Firestore
+- **Authentication**: Firebase Auth
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts
+- **Icons**: Heroicons (SVG)
