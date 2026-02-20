@@ -45,13 +45,27 @@ export interface MonthlySnapshot {
 export interface UserSettings {
   baseCurrency: Currency;
   currencyRates: {
-    EUR: number; // Rate to convert EUR to base currency
-    USD: number; // Rate to convert USD to base currency
-    Q: number;   // Rate to convert Q to base currency (1 if Q is base)
+    EUR: number;
+    USD: number;
+    Q: number;
   };
+}
+
+export interface RecurringExpense {
+  id: string;
+  userId: string;
+  name: string;         // e.g. "Internet", "Water", "Netflix"
+  category: string;     // reuses existing transaction categories
+  currency: Currency;
+  isFixed: boolean;     // true = fixed amount every month
+  defaultAmount: number; // amount if fixed, or a typical hint if variable
+  dayOfMonth: number;   // expected due day (1–31)
+  isActive: boolean;    // false = paused/hidden from reminders
+  note?: string;
 }
 
 // Form types (without id and userId)
 export type TransactionFormData = Omit<Transaction, 'id' | 'userId'>;
 export type AssetFormData = Omit<Asset, 'id' | 'userId'>;
 export type LiabilityFormData = Omit<Liability, 'id' | 'userId'>;
+export type RecurringExpenseFormData = Omit<RecurringExpense, 'id' | 'userId'>;

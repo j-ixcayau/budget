@@ -6,9 +6,14 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to check if user owns the document
+    // Helper function to check if user owns the document (by UID in match)
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper function to check if user owns the data (by UID in resource field)
+    function ownsData(resource) {
+      return isAuthenticated() && resource != null && resource.data.userId == request.auth.uid;
     }
     
     // User settings
@@ -18,30 +23,37 @@ service cloud.firestore {
     
     // Transactions
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update, delete: if ownsData(resource);
     }
     
     // Assets
     match /assets/{assetId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update, delete: if ownsData(resource);
     }
     
     // Liabilities
     match /liabilities/{liabilityId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update, delete: if ownsData(resource);
     }
     
     // Monthly Snapshots
     match /monthlySnapshots/{snapshotId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update, delete: if ownsData(resource);
+    }
+
+    // Recurring Expenses
+    match /recurringExpenses/{recurringId} {
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update, delete: if ownsData(resource);
     }
   }
 }

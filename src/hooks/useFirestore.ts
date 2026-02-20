@@ -8,6 +8,7 @@ import {
   getLiabilities,
   getMonthlySnapshots,
   getUserSettings,
+  getRecurringExpenses,
 } from '@/lib/firestore';
 import type {
   Transaction,
@@ -15,6 +16,7 @@ import type {
   Liability,
   MonthlySnapshot,
   UserSettings,
+  RecurringExpense,
 } from '@/types';
 
 export function useTransactions() {
@@ -135,4 +137,28 @@ export function useUserSettings() {
   }, [refresh]);
 
   return { settings, loading, refresh };
+}
+
+export function useRecurringExpenses() {
+  const { user } = useAuth();
+  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    if (!user) {
+      setRecurringExpenses([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const data = await getRecurringExpenses(user.uid);
+    setRecurringExpenses(data);
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { recurringExpenses, loading, refresh };
 }

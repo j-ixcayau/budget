@@ -22,6 +22,8 @@ import type {
   TransactionFormData,
   AssetFormData,
   LiabilityFormData,
+  RecurringExpense,
+  RecurringExpenseFormData,
 } from '@/types';
 
 // Default user settings
@@ -37,7 +39,6 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
   if (docSnap.exists()) {
     return docSnap.data() as UserSettings;
   }
-  // Create default settings if not exists
   await setDoc(docRef, defaultSettings);
   return defaultSettings;
 }
@@ -153,6 +154,36 @@ export async function addMonthlySnapshot(
 
 export async function deleteMonthlySnapshot(id: string): Promise<void> {
   await deleteDoc(doc(db, 'monthlySnapshots', id));
+}
+
+// ============ Recurring Expenses ============
+export async function getRecurringExpenses(userId: string): Promise<RecurringExpense[]> {
+  const q = query(
+    collection(db, 'recurringExpenses'),
+    where('userId', '==', userId),
+    orderBy('dayOfMonth', 'asc')
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as RecurringExpense));
+}
+
+export async function addRecurringExpense(
+  userId: string,
+  data: RecurringExpenseFormData
+): Promise<string> {
+  const docRef = await addDoc(collection(db, 'recurringExpenses'), { ...data, userId });
+  return docRef.id;
+}
+
+export async function updateRecurringExpense(
+  id: string,
+  data: Partial<RecurringExpenseFormData>
+): Promise<void> {
+  await updateDoc(doc(db, 'recurringExpenses', id), data);
+}
+
+export async function deleteRecurringExpense(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'recurringExpenses', id));
 }
 
 // ============ Helpers ============

@@ -39,7 +39,7 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
         type: formData.type,
         category: formData.category,
         currency: formData.currency,
-        note: formData.note || undefined,
+        note: formData.note || '',
       });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save transaction. Please try again.');
