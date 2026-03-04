@@ -22,10 +22,9 @@ import {
   convertToBaseCurrency,
 } from '@/lib/currency';
 import { getCurrentMonth, getMonthTransactions, addTransaction } from '@/lib/firestore';
+import { getPendingBills } from '@/lib/recurring';
 import type { RecurringExpense, TransactionFormData } from '@/types';
 import { Timestamp } from 'firebase/firestore';
-
-export default function DashboardPage() {
   const { user } = useAuth();
   const { transactions, refresh: refreshTransactions } = useTransactions();
   const { assets } = useAssets();
@@ -53,17 +52,8 @@ export default function DashboardPage() {
       .filter((t) => t.type === 'expense')
       .reduce((sum, t) => sum + convertToBaseCurrency(t.amount, t.currency, settings), 0);
 
-    // Calculate pending bills
-    // A bill is pending if it's active AND no transaction this month matches its name or category exactly
-    // Note: This is a simple heuristic. A better way would be tracking "lastLoggedMonth" on the expense itself.
-    const pendingBills = recurringExpenses.filter(expense => {
-      if (!expense.isActive) return false;
-      const isLogged = monthTransactions.some(tx => 
-        tx.note?.toLowerCase().includes(expense.name.toLowerCase()) || 
-        tx.category === expense.category
-      );
-      return !isLogged;
-    });
+    // Calculate pending bills using shared utility
+    const pendingBills = getPendingBills(recurringExpenses, monthTransactions);
 
     return { totalAssets, totalLiabilities, netWorth, monthIncome, monthExpenses, monthTransactions, pendingBills };
   }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses]);

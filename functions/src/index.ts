@@ -1,4 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -74,3 +75,92 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
     response.status(500).json({ error: error.message });
   }
 });
+
+export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
+  logger.info("Starting daily recurring expense check");
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!botToken || !chatId) {
+    logger.warn("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured, skipping notifications");
+    return;
+  }
+
+  try {
+    const usersSnapshot = await db.collection("users").get();
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userId = userDoc.id;
+      
+      // Get active recurring expenses
+      const recurringSnapshot = await db.collection("recurringExpenses")
+        .where("userId", "==", userId)
+        .where("isActive", "==", true)
+        .get();
+        
+      if (recurringSnapshot.empty) continue;
+      
+      const recurringExpenses = recurringSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      
+      // Get this month's transactions
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const transactionsSnapshot = await db.collection("transactions")
+        .where("userId", "==", userId)
+        .where("date", ">=", admin.firestore.Timestamp.fromDate(firstDayOfMonth))
+        .get();
+        
+      const monthTransactions = transactionsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          date: data.date
+        } as any;
+      });
+
+      // Filter pending bills
+      const pendingBills = recurringExpenses.filter((expense: any) => {
+        const isLogged = monthTransactions.some((tx: any) => 
+          tx.note?.toLowerCase().includes(expense.name.toLowerCase()) || 
+          tx.category === expense.category
+        );
+        return !isLogged;
+      });
+
+      // Find bills due in the next 3 days (or already due)
+      const todayDay = now.getDate();
+      const upcomingBills = pendingBills.filter((bill: any) => 
+        bill.dayOfMonth >= todayDay && bill.dayOfMonth <= todayDay + 3
+      );
+
+      if (upcomingBills.length > 0) {
+        await sendTelegramNotification(botToken, chatId, upcomingBills);
+      }
+    }
+  } catch (error: any) {
+    logger.error("Error in checkRecurringExpenses", { error: error.message });
+  }
+});
+
+async function sendTelegramNotification(token: string, chatId: string, bills: any[]) {
+  let message = "🔔 *Upcoming Recurring Expenses*\n\nDon't forget to log these bills:\n\n";
+  
+  bills.forEach(bill => {
+    message += `• *${bill.name}*\n  💰 ${bill.currency} ${bill.defaultAmount}\n  📅 Due Day: ${bill.dayOfMonth}\n  🏷️ Category: ${bill.category}\n\n`;
+  });
+
+  message += "🔗 [Open Dashboard](https://budget-app-url.web.app/dashboard)";
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: message,
+      parse_mode: "Markdown"
+    })
+  });
+}
