@@ -86,12 +86,29 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
     return;
   }
 
+  const now = new Date();
+  const isFirstWeekOfMonth = now.getDate() <= 7;
+
   try {
     const usersSnapshot = await db.collection("users").get();
     
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
       
+      // On the 1st-7th, check if this month's snapshot exists and remind if not
+      if (isFirstWeekOfMonth) {
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const snapshotQuery = await db.collection("monthlySnapshots")
+          .where("userId", "==", userId)
+          .where("month", "==", currentMonth)
+          .limit(1)
+          .get();
+
+        if (snapshotQuery.empty) {
+          await sendBalanceReminderNotification(botToken, chatId, currentMonth);
+        }
+      }
+
       // Get active recurring expenses
       const recurringSnapshot = await db.collection("recurringExpenses")
         .where("userId", "==", userId)
@@ -103,7 +120,6 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
       const recurringExpenses = recurringSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
       
       // Get this month's transactions
-      const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const transactionsSnapshot = await db.collection("transactions")
         .where("userId", "==", userId)
@@ -142,6 +158,28 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
     logger.error("Error in checkRecurringExpenses", { error: error.message });
   }
 });
+
+async function sendBalanceReminderNotification(token: string, chatId: string, month: string) {
+  const message =
+    `📊 *Monthly Balance Update Reminder*\n\n` +
+    `It's a new month (${month})! Time to:\n\n` +
+    `1️⃣ Update your asset balances\n` +
+    `2️⃣ Generate a monthly snapshot\n\n` +
+    `This keeps your net worth history accurate.\n\n` +
+    `🔗 [Open Assets](https://budget-app-url.web.app/assets)`;
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: message,
+      parse_mode: "Markdown",
+    }),
+  });
+}
 
 async function sendTelegramNotification(token: string, chatId: string, bills: any[]) {
   let message = "🔔 *Upcoming Recurring Expenses*\n\nDon't forget to log these bills:\n\n";

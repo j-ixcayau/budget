@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { AuthGuard } from '@/components/layout';
 import { Card, Button, Modal } from '@/components/ui';
-import { AssetForm } from '@/components/forms';
+import { AssetForm, BulkBalanceUpdateForm } from '@/components/forms';
 import { useAssets, useUserSettings } from '@/hooks/useFirestore';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useAuth } from '@/hooks/useAuth';
@@ -221,6 +221,7 @@ export default function AssetsPage() {
   const { prices, loading: pricesLoading } = useCryptoPrices(assets);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
 
   const handleAdd = async (data: AssetFormData) => {
     if (!user) return;
@@ -250,7 +251,14 @@ export default function AssetsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-zinc-100">Assets</h1>
-          <Button onClick={() => setIsModalOpen(true)}>Add Asset</Button>
+          <div className="flex gap-2">
+            {cashAssets.length > 0 && (
+              <Button variant="secondary" onClick={() => setIsBulkUpdateOpen(true)}>
+                Update Balances
+              </Button>
+            )}
+            <Button onClick={() => setIsModalOpen(true)}>Add Asset</Button>
+          </div>
         </div>
 
         {loading ? (
@@ -350,6 +358,18 @@ export default function AssetsPage() {
               onCancel={() => setEditingAsset(null)}
             />
           )}
+        </Modal>
+
+        {/* Bulk Balance Update Modal */}
+        <Modal isOpen={isBulkUpdateOpen} onClose={() => setIsBulkUpdateOpen(false)} title="Update Balances">
+          <BulkBalanceUpdateForm
+            assets={cashAssets}
+            onComplete={async () => {
+              await refresh();
+              setIsBulkUpdateOpen(false);
+            }}
+            onCancel={() => setIsBulkUpdateOpen(false)}
+          />
         </Modal>
       </div>
     </AuthGuard>

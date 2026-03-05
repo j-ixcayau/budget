@@ -104,6 +104,14 @@ export async function deleteAsset(id: string): Promise<void> {
   await deleteDoc(doc(db, 'assets', id));
 }
 
+export async function bulkUpdateAssetBalances(
+  updates: { id: string; balance: number }[]
+): Promise<void> {
+  await Promise.all(
+    updates.map(({ id, balance }) => updateDoc(doc(db, 'assets', id), { balance }))
+  );
+}
+
 // ============ Liabilities ============
 export async function getLiabilities(userId: string): Promise<Liability[]> {
   const q = query(collection(db, 'liabilities'), where('userId', '==', userId));

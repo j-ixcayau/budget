@@ -9,6 +9,7 @@ import {
   useMonthlySnapshots,
   useUserSettings,
 } from '@/hooks/useFirestore';
+import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useAuth } from '@/hooks/useAuth';
 import { addMonthlySnapshot, deleteMonthlySnapshot, getCurrentMonth } from '@/lib/firestore';
 import {
@@ -24,6 +25,7 @@ export default function SnapshotsPage() {
   const { liabilities } = useLiabilities();
   const { snapshots, loading, refresh } = useMonthlySnapshots();
   const { settings } = useUserSettings();
+  const { prices } = useCryptoPrices(assets);
   const [generating, setGenerating] = useState(false);
 
   const handleGenerate = async () => {
@@ -41,9 +43,9 @@ export default function SnapshotsPage() {
 
     setGenerating(true);
     try {
-      const totalAssets = calculateTotalAssets(assets, settings);
+      const totalAssets = calculateTotalAssets(assets, settings, prices);
       const totalLiabilities = calculateTotalLiabilities(liabilities, settings);
-      const netWorth = calculateNetWorth(assets, liabilities, settings);
+      const netWorth = calculateNetWorth(assets, liabilities, settings, prices);
 
       await addMonthlySnapshot(user.uid, {
         month: currentMonth,

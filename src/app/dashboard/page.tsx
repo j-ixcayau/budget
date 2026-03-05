@@ -39,6 +39,8 @@ export default function DashboardPage() {
 
   const currentMonth = getCurrentMonth();
 
+  const hasCurrentMonthSnapshot = snapshots.some((s) => s.month === currentMonth);
+
   const stats = useMemo(() => {
     if (!settings) return null;
 
@@ -71,6 +73,34 @@ export default function DashboardPage() {
     <AuthGuard>
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
+
+        {!hasCurrentMonthSnapshot && (
+          <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <svg className="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-300">Monthly balance update needed</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
+                Update your asset balances and generate a snapshot for {currentMonth} to keep your net worth history accurate.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <a
+                href="/assets"
+                className="bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+              >
+                Update Balances
+              </a>
+              <a
+                href="/snapshots"
+                className="bg-zinc-700/50 text-zinc-300 hover:bg-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+              >
+                Snapshots
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
