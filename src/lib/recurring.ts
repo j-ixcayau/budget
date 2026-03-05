@@ -2,16 +2,27 @@ import { RecurringExpense, Transaction, Currency, UserSettings } from '@/types';
 import { convertToBaseCurrency } from './currency';
 
 /**
- * Heuristic to check if a recurring expense has already been logged this month.
+ * Check if a recurring expense has already been logged this month.
+ * Matches on the expense name appearing in the transaction note, which is
+ * set automatically when logging from the dashboard ("Monthly {name}").
+ * Falls back to an exact category + similar amount match to catch manually
+ * logged transactions that didn't use the Log button.
  */
 export function isBillLoggedThisMonth(
   expense: RecurringExpense,
   monthTransactions: Transaction[]
 ): boolean {
-  return monthTransactions.some(tx => 
-    tx.note?.toLowerCase().includes(expense.name.toLowerCase()) || 
-    tx.category === expense.category
-  );
+  const nameLower = expense.name.toLowerCase();
+  return monthTransactions.some(tx => {
+    if (tx.note?.toLowerCase().includes(nameLower)) return true;
+
+    if (tx.category === expense.category && expense.isFixed) {
+      const diff = Math.abs(tx.amount - expense.defaultAmount);
+      return diff < 0.01;
+    }
+
+    return false;
+  });
 }
 
 /**

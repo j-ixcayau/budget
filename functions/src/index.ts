@@ -137,10 +137,14 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
 
       // Filter pending bills
       const pendingBills = recurringExpenses.filter((expense: any) => {
-        const isLogged = monthTransactions.some((tx: any) => 
-          tx.note?.toLowerCase().includes(expense.name.toLowerCase()) || 
-          tx.category === expense.category
-        );
+        const nameLower = expense.name.toLowerCase();
+        const isLogged = monthTransactions.some((tx: any) => {
+          if (tx.note?.toLowerCase().includes(nameLower)) return true;
+          if (tx.category === expense.category && expense.isFixed) {
+            return Math.abs(tx.amount - expense.defaultAmount) < 0.01;
+          }
+          return false;
+        });
         return !isLogged;
       });
 
