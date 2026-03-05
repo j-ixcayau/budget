@@ -79,10 +79,10 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
 export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
   logger.info("Starting daily recurring expense check");
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const appUrl = process.env.APP_URL || "https://budget-app-url.web.app";
 
-  if (!botToken || !chatId) {
-    logger.warn("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured, skipping notifications");
+  if (!botToken) {
+    logger.warn("TELEGRAM_BOT_TOKEN not configured, skipping notifications");
     return;
   }
 
@@ -94,6 +94,13 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
     
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
+      const userData = userDoc.data();
+      const userChatId = userData.telegramChatId || process.env.TELEGRAM_CHAT_ID;
+
+      if (!userChatId) {
+        logger.debug(`Skipping user ${userId}: No telegramChatId configured`);
+        continue;
+      }
       
       // On the 1st-7th, check if this month's snapshot exists and remind if not
       if (isFirstWeekOfMonth) {
@@ -105,7 +112,7 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
           .get();
 
         if (snapshotQuery.empty) {
-          await sendBalanceReminderNotification(botToken, chatId, currentMonth);
+          await sendBalanceReminderNotification(botToken, userChatId, currentMonth, appUrl);
         }
       }
 
@@ -155,7 +162,7 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
       );
 
       if (upcomingBills.length > 0) {
-        await sendTelegramNotification(botToken, chatId, upcomingBills);
+        await sendTelegramNotification(botToken, userChatId, upcomingBills, appUrl);
       }
     }
   } catch (error: any) {
@@ -163,46 +170,54 @@ export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
   }
 });
 
-async function sendBalanceReminderNotification(token: string, chatId: string, month: string) {
+async function sendBalanceReminderNotification(token: string, chatId: string, month: string, appUrl: string) {
   const message =
     `📊 *Monthly Balance Update Reminder*\n\n` +
     `It's a new month (${month})! Time to:\n\n` +
     `1️⃣ Update your asset balances\n` +
     `2️⃣ Generate a monthly snapshot\n\n` +
     `This keeps your net worth history accurate.\n\n` +
-    `🔗 [Open Assets](https://budget-app-url.web.app/assets)`;
+    `🔗 [Open Assets](${appUrl}/assets)`;
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: "Markdown",
-    }),
-  });
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "Markdown",
+      }),
+    });
+  } catch (error: any) {
+    logger.error("Failed to send balance reminder", { chatId, error: error.message });
+  }
 }
 
-async function sendTelegramNotification(token: string, chatId: string, bills: any[]) {
+async function sendTelegramNotification(token: string, chatId: string, bills: any[], appUrl: string) {
   let message = "🔔 *Upcoming Recurring Expenses*\n\nDon't forget to log these bills:\n\n";
   
   bills.forEach(bill => {
     message += `• *${bill.name}*\n  💰 ${bill.currency} ${bill.defaultAmount}\n  📅 Due Day: ${bill.dayOfMonth}\n  🏷️ Category: ${bill.category}\n\n`;
   });
 
-  message += "🔗 [Open Dashboard](https://budget-app-url.web.app/dashboard)";
+  message += `🔗 [Open Dashboard](${appUrl}/dashboard)`;
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: "Markdown"
-    })
-  });
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "Markdown"
+      })
+    });
+  } catch (error: any) {
+    logger.error("Failed to send recurring bills notification", { chatId, error: error.message });
+  }
 }

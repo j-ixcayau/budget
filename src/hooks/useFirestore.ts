@@ -19,106 +19,73 @@ import type {
   RecurringExpense,
 } from '@/types';
 
-export function useTransactions() {
+/**
+ * Generic hook to fetch a Firestore collection for the current user.
+ */
+function useFirestoreCollection<T>(
+  fetchFn: (userId: string) => Promise<T[]>
+) {
   const { user } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) {
-      setTransactions([]);
+      setData([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    const data = await getTransactions(user.uid);
-    setTransactions(data);
-    setLoading(false);
-  }, [user]);
+    setError(null);
+    try {
+      const result = await fetchFn(user.uid);
+      setData(result);
+    } catch (err: any) {
+      setError(err);
+      console.error('Firestore hook error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, fetchFn]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  return { transactions, loading, refresh };
+  return { data, loading, error, refresh };
+}
+
+export function useTransactions() {
+  const { data: transactions, ...rest } = useFirestoreCollection(getTransactions);
+  return { transactions, ...rest };
 }
 
 export function useAssets() {
-  const { user } = useAuth();
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    if (!user) {
-      setAssets([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const data = await getAssets(user.uid);
-    setAssets(data);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { assets, loading, refresh };
+  const { data: assets, ...rest } = useFirestoreCollection(getAssets);
+  return { assets, ...rest };
 }
 
 export function useLiabilities() {
-  const { user } = useAuth();
-  const [liabilities, setLiabilities] = useState<Liability[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    if (!user) {
-      setLiabilities([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const data = await getLiabilities(user.uid);
-    setLiabilities(data);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { liabilities, loading, refresh };
+  const { data: liabilities, ...rest } = useFirestoreCollection(getLiabilities);
+  return { liabilities, ...rest };
 }
 
 export function useMonthlySnapshots() {
-  const { user } = useAuth();
-  const [snapshots, setSnapshots] = useState<MonthlySnapshot[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: snapshots, ...rest } = useFirestoreCollection(getMonthlySnapshots);
+  return { snapshots, ...rest };
+}
 
-  const refresh = useCallback(async () => {
-    if (!user) {
-      setSnapshots([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const data = await getMonthlySnapshots(user.uid);
-    setSnapshots(data);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { snapshots, loading, refresh };
+export function useRecurringExpenses() {
+  const { data: recurringExpenses, ...rest } = useFirestoreCollection(getRecurringExpenses);
+  return { recurringExpenses, ...rest };
 }
 
 export function useUserSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -127,38 +94,20 @@ export function useUserSettings() {
       return;
     }
     setLoading(true);
-    const data = await getUserSettings(user.uid);
-    setSettings(data);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { settings, loading, refresh };
-}
-
-export function useRecurringExpenses() {
-  const { user } = useAuth();
-  const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    if (!user) {
-      setRecurringExpenses([]);
+    setError(null);
+    try {
+      const data = await getUserSettings(user.uid);
+      setSettings(data);
+    } catch (err: any) {
+      setError(err);
+    } finally {
       setLoading(false);
-      return;
     }
-    setLoading(true);
-    const data = await getRecurringExpenses(user.uid);
-    setRecurringExpenses(data);
-    setLoading(false);
   }, [user]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  return { recurringExpenses, loading, refresh };
+  return { settings, loading, error, refresh };
 }

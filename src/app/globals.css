@@ -3,18 +3,39 @@
 :root {
   --background: #09090b;
   --foreground: #f4f4f5;
+  --accent: #6366f1; /* Indigo */
+  --accent-foreground: #ffffff;
+  --card: #18181b;
+  --card-foreground: #f4f4f5;
+  --border: #27272a;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-zinc-900/40 backdrop-blur-md border border-zinc-100/10 shadow-xl;
+  }
+  
+  .glass-card {
+    @apply bg-zinc-900/20 backdrop-blur-lg border border-white/5 shadow-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -22,12 +43,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  @apply bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors;
 }
 
 /* Smooth scrolling */
@@ -37,6 +53,10 @@ html {
 
 /* Focus ring */
 :focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+  @apply outline-none ring-2 ring-indigo-500 ring-offset-2 ring-offset-zinc-950;
+}
+
+/* Transitions */
+* {
+  @apply transition-all duration-200 ease-in-out;
 }

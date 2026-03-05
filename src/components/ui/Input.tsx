@@ -8,18 +8,27 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, className = '', ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {label && (
-          <label className="text-sm font-medium text-zinc-300">{label}</label>
+          <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">
+            {label}
+          </label>
         )}
-        <input
-          ref={ref}
-          className={`bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100 
-            placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 
-            focus:border-transparent ${error ? 'border-red-500' : ''} ${className}`}
-          {...props}
-        />
-        {error && <span className="text-sm text-red-500">{error}</span>}
+        <div className="relative">
+          <input
+            ref={ref}
+            className={`w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-100 
+              placeholder-zinc-600 transition-all duration-200
+              focus:bg-zinc-900 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 
+              focus:outline-none ${error ? 'border-red-500/50 ring-4 ring-red-500/10' : ''} ${className}`}
+            {...props}
+          />
+        </div>
+        {error && (
+          <span className="text-xs text-red-400 font-medium ml-1">
+            {error}
+          </span>
+        )}
       </div>
     );
   }

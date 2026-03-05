@@ -25,35 +25,40 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read: if ownsData(resource);
       allow create: if ownsData(request.resource);
-      allow update, delete: if ownsData(resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
     }
     
     // Assets
     match /assets/{assetId} {
       allow read: if ownsData(resource);
       allow create: if ownsData(request.resource);
-      allow update, delete: if ownsData(resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
     }
     
     // Liabilities
     match /liabilities/{liabilityId} {
       allow read: if ownsData(resource);
       allow create: if ownsData(request.resource);
-      allow update, delete: if ownsData(resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
     }
     
     // Monthly Snapshots
     match /monthlySnapshots/{snapshotId} {
       allow read: if ownsData(resource);
       allow create: if ownsData(request.resource);
-      allow update, delete: if ownsData(resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
     }
 
     // Recurring Expenses
     match /recurringExpenses/{recurringId} {
       allow read: if ownsData(resource);
       allow create: if ownsData(request.resource);
-      allow update, delete: if ownsData(resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
     }
   }
 }
