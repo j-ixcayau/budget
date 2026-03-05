@@ -1,4 +1,5 @@
 import type { Currency, UserSettings, Asset, Liability } from '@/types';
+import type { CryptoPrices } from '@/lib/crypto';
 
 export function convertToBaseCurrency(
   amount: number,
@@ -21,12 +22,25 @@ export function formatCurrency(amount: number, currency: Currency = 'Q'): string
   })}`;
 }
 
+export function getAssetValueInBase(
+  asset: Asset,
+  settings: UserSettings,
+  cryptoPrices?: CryptoPrices
+): number {
+  if (asset.type === 'crypto' && asset.coinId && asset.quantity && cryptoPrices?.[asset.coinId]) {
+    const valueInUsd = asset.quantity * cryptoPrices[asset.coinId].usd;
+    return valueInUsd * settings.currencyRates.USD;
+  }
+  return convertToBaseCurrency(asset.balance, asset.currency, settings);
+}
+
 export function calculateTotalAssets(
   assets: Asset[],
-  settings: UserSettings
+  settings: UserSettings,
+  cryptoPrices?: CryptoPrices
 ): number {
   return assets.reduce((total, asset) => {
-    return total + convertToBaseCurrency(asset.balance, asset.currency, settings);
+    return total + getAssetValueInBase(asset, settings, cryptoPrices);
   }, 0);
 }
 
@@ -42,7 +56,8 @@ export function calculateTotalLiabilities(
 export function calculateNetWorth(
   assets: Asset[],
   liabilities: Liability[],
-  settings: UserSettings
+  settings: UserSettings,
+  cryptoPrices?: CryptoPrices
 ): number {
-  return calculateTotalAssets(assets, settings) - calculateTotalLiabilities(liabilities, settings);
+  return calculateTotalAssets(assets, settings, cryptoPrices) - calculateTotalLiabilities(liabilities, settings);
 }

@@ -15,7 +15,7 @@ A minimal, personal finance dashboard built with Next.js, Firebase, and Tailwind
 
 1. **Clone the repository**
 2. **Install dependencies**: `npm install`
-3. **Configure Environment**: 
+3. **Configure Environment**:
    - Create a `.env.local` file from `.env.local.example`.
    - Add your Firebase project credentials.
 4. **Enable Firebase Services**:
@@ -35,6 +35,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser.
 ## Hosting Options
 
 ### Option 1: Vercel (Recommended)
+
 Next.js is built by Vercel, so it offers the most seamless deployment experience.
 
 1. Create a [Vercel](https://vercel.com) account.
@@ -43,15 +44,19 @@ Next.js is built by Vercel, so it offers the most seamless deployment experience
 4. Click **Deploy**. Vercel will handle the build and give you a production URL.
 
 ### Option 2: Firebase Hosting
+
 Since you are already using Firebase, you can keep your hosting in the same project.
 
 1. Initialize Hosting in your local project:
+
    ```bash
    firebase init hosting
    ```
+
    - Select your project.
    - For "Public directory", type `.next` (or keep default `public` and Next.js will handle it).
    - For "Configure as a single-page app", say **Yes**.
+
 2. To deploy:
    ```bash
    npm run build

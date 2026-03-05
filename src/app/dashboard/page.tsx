@@ -25,6 +25,8 @@ import { getCurrentMonth, getMonthTransactions, addTransaction } from '@/lib/fir
 import { getPendingBills } from '@/lib/recurring';
 import type { RecurringExpense, TransactionFormData } from '@/types';
 import { Timestamp } from 'firebase/firestore';
+
+export default function DashboardPage() {
   const { user } = useAuth();
   const { transactions, refresh: refreshTransactions } = useTransactions();
   const { assets } = useAssets();

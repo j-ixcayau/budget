@@ -22,6 +22,11 @@ export interface Asset {
   balance: number;
   currency: Currency;
   type: AssetType;
+  coinId?: string;
+  coinSymbol?: string;
+  quantity?: number;
+  investedAmount?: number;
+  investedCurrency?: Currency;
 }
 
 export interface Liability {

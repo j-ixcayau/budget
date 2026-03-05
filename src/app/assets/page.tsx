@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AuthGuard } from '@/components/layout';
 import { Card, Button, Modal } from '@/components/ui';
 import { AssetForm } from '@/components/forms';
-import { useAssets } from '@/hooks/useFirestore';
+import { useAssets, useUserSettings } from '@/hooks/useFirestore';
+import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useAuth } from '@/hooks/useAuth';
 import { addAsset, updateAsset, deleteAsset } from '@/lib/firestore';
-import { formatCurrency } from '@/lib/currency';
-import type { Asset, AssetFormData } from '@/types';
+import { formatCurrency, convertToBaseCurrency } from '@/lib/currency';
+import { calculateProfitLoss, getCryptoValueInBaseCurrency } from '@/lib/crypto';
+import type { Asset, AssetFormData, Currency } from '@/types';
+import type { CryptoPrices } from '@/lib/crypto';
 
 function AssetItem({
   asset,
@@ -45,9 +48,177 @@ function AssetItem({
   );
 }
 
+function CryptoAssetItem({
+  asset,
+  prices,
+  onEdit,
+  onDelete,
+}: {
+  asset: Asset;
+  prices: CryptoPrices;
+  onEdit: (a: Asset) => void;
+  onDelete: (id: string) => void;
+}) {
+  const price = asset.coinId ? prices[asset.coinId] : null;
+  const currentValueUsd = price && asset.quantity ? asset.quantity * price.usd : null;
+
+  const investedDisplay = asset.investedAmount != null && asset.investedCurrency
+    ? formatCurrency(asset.investedAmount, asset.investedCurrency)
+    : null;
+
+  const pl = currentValueUsd != null && asset.investedAmount != null && asset.investedCurrency === 'USD'
+    ? calculateProfitLoss(currentValueUsd, asset.investedAmount)
+    : null;
+
+  // For non-USD invested currencies we still show the raw P/L in USD
+  const plApprox = currentValueUsd != null && asset.investedAmount != null && asset.investedCurrency !== 'USD'
+    ? { note: true as const }
+    : null;
+
+  return (
+    <div className="p-3 bg-zinc-800/50 rounded-lg space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
+            {asset.coinSymbol || '???'}
+          </span>
+          <span className="text-zinc-100 font-medium">{asset.name}</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(asset)}
+            className="text-blue-400 hover:text-blue-300 text-sm"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(asset.id)}
+            className="text-red-400 hover:text-red-300 text-sm"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+        <div className="text-zinc-400">Quantity</div>
+        <div className="text-zinc-200 text-right">
+          {asset.quantity != null ? asset.quantity.toLocaleString('en-US', { maximumFractionDigits: 8 }) : '—'}{' '}
+          <span className="text-zinc-500">{asset.coinSymbol}</span>
+        </div>
+
+        {investedDisplay && (
+          <>
+            <div className="text-zinc-400">Invested</div>
+            <div className="text-zinc-200 text-right">{investedDisplay}</div>
+          </>
+        )}
+
+        <div className="text-zinc-400">Current Value</div>
+        <div className="text-zinc-200 text-right">
+          {currentValueUsd != null ? formatCurrency(currentValueUsd, 'USD') : (
+            <span className="text-zinc-500">Loading...</span>
+          )}
+        </div>
+
+        {price?.usd_24h_change != null && (
+          <>
+            <div className="text-zinc-400">24h Change</div>
+            <div className={`text-right font-medium ${price.usd_24h_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {price.usd_24h_change >= 0 ? '+' : ''}{price.usd_24h_change.toFixed(2)}%
+            </div>
+          </>
+        )}
+
+        {pl && (
+          <>
+            <div className="text-zinc-400">P/L</div>
+            <div className={`text-right font-semibold ${pl.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {pl.amount >= 0 ? '+' : ''}{formatCurrency(pl.amount, 'USD')}{' '}
+              <span className="text-xs">({pl.percentage >= 0 ? '+' : ''}{pl.percentage.toFixed(1)}%)</span>
+            </div>
+          </>
+        )}
+
+        {plApprox && currentValueUsd != null && asset.investedAmount != null && (
+          <>
+            <div className="text-zinc-400">P/L (approx)</div>
+            <div className="text-zinc-300 text-right text-xs">
+              Value: {formatCurrency(currentValueUsd, 'USD')} vs Invested: {investedDisplay}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CryptoPortfolioSummary({
+  cryptoAssets,
+  prices,
+  baseCurrency,
+  settings,
+}: {
+  cryptoAssets: Asset[];
+  prices: CryptoPrices;
+  baseCurrency: Currency;
+  settings: { currencyRates: { EUR: number; USD: number; Q: number } };
+}) {
+  const summary = useMemo(() => {
+    let totalCurrentBase = 0;
+    let totalInvestedBase = 0;
+
+    for (const asset of cryptoAssets) {
+      if (asset.coinId && asset.quantity) {
+        totalCurrentBase += getCryptoValueInBaseCurrency(asset.quantity, asset.coinId, prices, { baseCurrency, currencyRates: settings.currencyRates });
+      }
+      if (asset.investedAmount != null && asset.investedCurrency) {
+        totalInvestedBase += convertToBaseCurrency(asset.investedAmount, asset.investedCurrency, { baseCurrency, currencyRates: settings.currencyRates });
+      }
+    }
+
+    const pl = calculateProfitLoss(totalCurrentBase, totalInvestedBase);
+    return { totalCurrentBase, totalInvestedBase, pl };
+  }, [cryptoAssets, prices, baseCurrency, settings.currencyRates]);
+
+  if (cryptoAssets.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+        <div className="text-xs text-zinc-500 mb-1">Total Invested</div>
+        <div className="text-sm font-semibold text-zinc-200">
+          {formatCurrency(summary.totalInvestedBase, baseCurrency)}
+        </div>
+      </div>
+      <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+        <div className="text-xs text-zinc-500 mb-1">Current Value</div>
+        <div className="text-sm font-semibold text-zinc-200">
+          {summary.totalCurrentBase > 0
+            ? formatCurrency(summary.totalCurrentBase, baseCurrency)
+            : <span className="text-zinc-500">Loading...</span>}
+        </div>
+      </div>
+      <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+        <div className="text-xs text-zinc-500 mb-1">Total P/L</div>
+        <div className={`text-sm font-semibold ${summary.pl.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {summary.totalCurrentBase > 0 ? (
+            <>
+              {summary.pl.amount >= 0 ? '+' : ''}{formatCurrency(summary.pl.amount, baseCurrency)}
+              <span className="text-xs ml-1">({summary.pl.percentage >= 0 ? '+' : ''}{summary.pl.percentage.toFixed(1)}%)</span>
+            </>
+          ) : '—'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AssetsPage() {
   const { user } = useAuth();
   const { assets, loading, refresh } = useAssets();
+  const { settings } = useUserSettings();
+  const { prices, loading: pricesLoading } = useCryptoPrices(assets);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
@@ -128,15 +299,33 @@ export default function AssetsPage() {
             </Card>
 
             {/* Crypto */}
-            <Card title="Crypto">
+            <Card
+              title={
+                <span className="flex items-center gap-2">
+                  Crypto
+                  {pricesLoading && (
+                    <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                  )}
+                </span>
+              }
+            >
+              {settings && (
+                <CryptoPortfolioSummary
+                  cryptoAssets={cryptoAssets}
+                  prices={prices}
+                  baseCurrency={settings.baseCurrency}
+                  settings={settings}
+                />
+              )}
               <div className="space-y-3">
                 {cryptoAssets.length === 0 ? (
                   <div className="text-zinc-500 text-sm py-2">No crypto assets.</div>
                 ) : (
                   cryptoAssets.map((asset) => (
-                    <AssetItem
+                    <CryptoAssetItem
                       key={asset.id}
                       asset={asset}
+                      prices={prices}
                       onEdit={setEditingAsset}
                       onDelete={handleDelete}
                     />
