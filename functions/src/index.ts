@@ -76,15 +76,21 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
   }
 });
 
-export const checkRecurringExpenses = onSchedule("0 9 * * *", async (event) => {
-  logger.info("Starting daily recurring expense check");
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const appUrl = process.env.APP_URL || "https://budget-app-url.web.app";
+export const checkRecurringExpenses = onSchedule(
+  {
+    schedule: "0 9 * * *",
+    secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
+    timeZone: "America/Los_Angeles", // Optional: Making the timezone explicit
+  },
+  async (event) => {
+    logger.info("Starting daily recurring expense check");
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const appUrl = process.env.APP_URL || "https://budget-app-url.web.app";
 
-  if (!botToken) {
-    logger.warn("TELEGRAM_BOT_TOKEN not configured, skipping notifications");
-    return;
-  }
+    if (!botToken) {
+      logger.warn("TELEGRAM_BOT_TOKEN not configured, skipping notifications");
+      return;
+    }
 
   const now = new Date();
   const isFirstWeekOfMonth = now.getDate() <= 7;
@@ -182,7 +188,7 @@ async function sendBalanceReminderNotification(token: string, chatId: string, mo
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -191,6 +197,10 @@ async function sendBalanceReminderNotification(token: string, chatId: string, mo
         parse_mode: "Markdown",
       }),
     });
+    if (!res.ok) {
+      const errText = await res.text();
+      logger.error("Telegram API error (balance reminder)", { status: res.status, body: errText });
+    }
   } catch (error: any) {
     logger.error("Failed to send balance reminder", { chatId, error: error.message });
   }
@@ -208,7 +218,7 @@ async function sendTelegramNotification(token: string, chatId: string, bills: an
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -217,6 +227,12 @@ async function sendTelegramNotification(token: string, chatId: string, bills: an
         parse_mode: "Markdown"
       })
     });
+    if (!res.ok) {
+      const errText = await res.text();
+      logger.error("Telegram API error (recurring bills)", { status: res.status, body: errText });
+    } else {
+      logger.info(`Successfully sent notification to ${chatId}`);
+    }
   } catch (error: any) {
     logger.error("Failed to send recurring bills notification", { chatId, error: error.message });
   }
