@@ -78,14 +78,14 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
 
 export const checkRecurringExpenses = onSchedule(
   {
-    schedule: "0 9 * * *",
+    schedule: "0 10 * * *",
     secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
-    timeZone: "America/Los_Angeles", // Optional: Making the timezone explicit
+    timeZone: "America/Guatemala", // Optional: Making the timezone explicit
   },
   async (event) => {
     logger.info("Starting daily recurring expense check");
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const appUrl = process.env.APP_URL || "https://budget-app-url.web.app";
+    const appUrl = process.env.APP_URL || "https://ixca-bugdet.web.app";
 
     if (!botToken) {
       logger.warn("TELEGRAM_BOT_TOKEN not configured, skipping notifications");
@@ -136,7 +136,7 @@ export const checkRecurringExpenses = onSchedule(
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const transactionsSnapshot = await db.collection("transactions")
         .where("userId", "==", userId)
-        .where("date", ">=", admin.firestore.Timestamp.fromDate(firstDayOfMonth))
+        .where("date", ">=", firstDayOfMonth)
         .get();
         
       const monthTransactions = transactionsSnapshot.docs.map(doc => {
@@ -161,10 +161,10 @@ export const checkRecurringExpenses = onSchedule(
         return !isLogged;
       });
 
-      // Find bills due in the next 3 days (or already due)
+      // Find bills due in the next 3 days (or already due this month)
       const todayDay = now.getDate();
       const upcomingBills = pendingBills.filter((bill: any) => 
-        bill.dayOfMonth >= todayDay && bill.dayOfMonth <= todayDay + 3
+        bill.dayOfMonth <= todayDay + 3
       );
 
       if (upcomingBills.length > 0) {
@@ -237,3 +237,5 @@ async function sendTelegramNotification(token: string, chatId: string, bills: an
     logger.error("Failed to send recurring bills notification", { chatId, error: error.message });
   }
 }
+
+
