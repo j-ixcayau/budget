@@ -3,3 +3,4 @@ export { AssetForm } from './AssetForm';
 export { BulkBalanceUpdateForm } from './BulkBalanceUpdateForm';
 export { LiabilityForm } from './LiabilityForm';
 export { RecurringExpenseForm } from './RecurringExpenseForm';
+export { DebtForm } from './DebtForm';

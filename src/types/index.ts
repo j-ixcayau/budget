@@ -69,8 +69,34 @@ export interface RecurringExpense {
   note?: string;
 }
 
+export type DebtStatus = 'active' | 'settled';
+
+export interface Debt {
+  id: string;
+  userId: string;
+  personName: string;       // who owes you
+  amount: number;           // original amount lent
+  remainingAmount: number;  // decreases as payments come in
+  currency: Currency;
+  date: Timestamp;
+  dueDate?: Timestamp;      // optional expected repayment date
+  note?: string;
+  status: DebtStatus;
+}
+
+export interface DebtPayment {
+  id: string;
+  debtId: string;
+  userId: string;
+  amount: number;
+  date: Timestamp;
+  note?: string;
+}
+
 // Form types (without id and userId)
 export type TransactionFormData = Omit<Transaction, 'id' | 'userId'>;
 export type AssetFormData = Omit<Asset, 'id' | 'userId'>;
 export type LiabilityFormData = Omit<Liability, 'id' | 'userId'>;
 export type RecurringExpenseFormData = Omit<RecurringExpense, 'id' | 'userId'>;
+export type DebtFormData = Omit<Debt, 'id' | 'userId' | 'remainingAmount' | 'status'>;
+export type DebtPaymentFormData = Omit<DebtPayment, 'id' | 'userId'>;

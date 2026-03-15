@@ -9,6 +9,7 @@ import {
   getMonthlySnapshots,
   getUserSettings,
   getRecurringExpenses,
+  getDebts,
 } from '@/lib/firestore';
 import type {
   Transaction,
@@ -17,6 +18,7 @@ import type {
   MonthlySnapshot,
   UserSettings,
   RecurringExpense,
+  Debt,
 } from '@/types';
 
 /**
@@ -79,6 +81,11 @@ export function useMonthlySnapshots() {
 export function useRecurringExpenses() {
   const { data: recurringExpenses, ...rest } = useFirestoreCollection(getRecurringExpenses);
   return { recurringExpenses, ...rest };
+}
+
+export function useDebts() {
+  const { data: debts, ...rest } = useFirestoreCollection<Debt>(getDebts);
+  return { debts, ...rest };
 }
 
 export function useUserSettings() {

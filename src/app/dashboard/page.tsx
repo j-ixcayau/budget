@@ -13,6 +13,7 @@ import {
   useMonthlySnapshots,
   useUserSettings,
   useRecurringExpenses,
+  useDebts,
 } from '@/hooks/useFirestore';
 import {
   calculateTotalAssets,
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const { snapshots } = useMonthlySnapshots();
   const { settings } = useUserSettings();
   const { recurringExpenses } = useRecurringExpenses();
+  const { debts } = useDebts();
 
   const [logExpense, setLogExpense] = useState<RecurringExpense | null>(null);
 
@@ -59,8 +61,12 @@ export default function DashboardPage() {
     // Calculate pending bills using shared utility
     const pendingBills = getPendingBills(recurringExpenses, monthTransactions);
 
-    return { totalAssets, totalLiabilities, netWorth, monthIncome, monthExpenses, monthTransactions, pendingBills };
-  }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses]);
+    const totalDebtsOwed = debts
+      .filter((d) => d.status === 'active')
+      .reduce((sum, d) => sum + convertToBaseCurrency(d.remainingAmount, d.currency, settings), 0);
+
+    return { totalAssets, totalLiabilities, netWorth, monthIncome, monthExpenses, monthTransactions, pendingBills, totalDebtsOwed };
+  }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses, debts]);
 
   const handleLogBill = async (data: TransactionFormData) => {
     if (!user) return;
@@ -139,6 +145,15 @@ export default function DashboardPage() {
             <div className={`text-2xl font-bold ${stats && (stats.monthIncome - stats.monthExpenses) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {stats ? formatCurrency(stats.monthIncome - stats.monthExpenses, settings?.baseCurrency) : '—'}
             </div>
+          </Card>
+          <Card>
+            <div className="text-sm text-zinc-400">Outstanding Debts Owed Me</div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {stats ? formatCurrency(stats.totalDebtsOwed, settings?.baseCurrency) : '—'}
+            </div>
+            <a href="/debts" className="text-xs text-zinc-500 hover:text-zinc-300 mt-1 inline-block transition-colors">
+              View debts →
+            </a>
           </Card>
         </div>
 

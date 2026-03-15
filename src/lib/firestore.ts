@@ -25,6 +25,10 @@ import type {
   LiabilityFormData,
   RecurringExpense,
   RecurringExpenseFormData,
+  Debt,
+  DebtFormData,
+  DebtPayment,
+  DebtPaymentFormData,
 } from '@/types';
 
 // Default user settings
@@ -237,7 +241,6 @@ export async function deleteRecurringExpense(id: string): Promise<void> {
   return deleteFromCollection('recurringExpenses', id);
 }
 
-// ============ Helpers ============
 export function getCurrentMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -252,4 +255,76 @@ export function getMonthTransactions(
     const txMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     return txMonth === month;
   });
+}
+
+// ============ Debts (People Who Owe Me) ============
+export async function getDebts(userId: string): Promise<Debt[]> {
+  return getCollection<Debt>('debts', userId, 'date', 'desc');
+}
+
+export async function addDebt(userId: string, data: DebtFormData): Promise<string> {
+  return addToCollection('debts', userId, {
+    ...data,
+    remainingAmount: data.amount,
+    status: 'active',
+  });
+}
+
+export async function updateDebt(id: string, data: Partial<DebtFormData>): Promise<void> {
+  return updateInCollection('debts', id, data);
+}
+
+export async function deleteDebt(id: string): Promise<void> {
+  // Also delete all payments for this debt
+  try {
+    const q = query(collection(db, 'debtPayments'), where('debtId', '==', id));
+    const snapshot = await getDocs(q);
+    await Promise.all(snapshot.docs.map((d) => deleteDoc(doc(db, 'debtPayments', d.id))));
+    await deleteFromCollection('debts', id);
+  } catch (error) {
+    console.error('Error deleting debt:', error);
+    throw error;
+  }
+}
+
+export async function getDebtPayments(debtId: string, userId: string): Promise<DebtPayment[]> {
+  try {
+    const q = query(
+      collection(db, 'debtPayments'),
+      where('userId', '==', userId),
+      where('debtId', '==', debtId),
+      orderBy('date', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as DebtPayment));
+  } catch (error) {
+    console.error('Error fetching debt payments:', error);
+    throw error;
+  }
+}
+
+export async function addDebtPayment(
+  userId: string,
+  data: DebtPaymentFormData,
+  currentRemainingAmount: number
+): Promise<string> {
+  try {
+    // Add the payment record
+    const paymentRef = await addDoc(collection(db, 'debtPayments'), { ...data, userId });
+
+    // Update the parent debt's remainingAmount
+    const newRemaining = Math.max(0, currentRemainingAmount - data.amount);
+    const update: Record<string, unknown> = { remainingAmount: newRemaining };
+    if (newRemaining === 0) update.status = 'settled';
+    await updateDoc(doc(db, 'debts', data.debtId), update);
+
+    return paymentRef.id;
+  } catch (error) {
+    console.error('Error adding debt payment:', error);
+    throw error;
+  }
+}
+
+export async function markDebtSettled(id: string): Promise<void> {
+  return updateInCollection('debts', id, { status: 'settled', remainingAmount: 0 });
 }

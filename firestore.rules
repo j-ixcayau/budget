@@ -60,5 +60,21 @@ service cloud.firestore {
       allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
       allow delete: if ownsData(resource);
     }
+
+    // Debts (People Who Owe Me)
+    match /debts/{debtId} {
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
+    }
+
+    // Debt Payments
+    match /debtPayments/{paymentId} {
+      allow read: if ownsData(resource);
+      allow create: if ownsData(request.resource);
+      allow update: if ownsData(resource) && request.resource.data.userId == resource.data.userId;
+      allow delete: if ownsData(resource);
+    }
   }
 }
