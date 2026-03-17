@@ -306,18 +306,26 @@ export async function getDebtPayments(debtId: string, userId: string): Promise<D
 export async function addDebtPayment(
   userId: string,
   data: DebtPaymentFormData,
-  currentRemainingAmount: number
+  currentDebt: { remainingAmount: number; amount: number }
 ): Promise<string> {
   try {
-    // Add the payment record
     const paymentRef = await addDoc(collection(db, 'debtPayments'), { ...data, userId });
 
-    // Update the parent debt's remainingAmount
-    const newRemaining = Math.max(0, currentRemainingAmount - data.amount);
-    const update: Record<string, unknown> = { remainingAmount: newRemaining };
-    if (newRemaining === 0) update.status = 'settled';
-    await updateDoc(doc(db, 'debts', data.debtId), update);
+    const update: Record<string, unknown> = {};
 
+    if (data.type === 'payment') {
+      // They paid you back — reduce what's owed
+      const newRemaining = Math.max(0, currentDebt.remainingAmount - data.amount);
+      update.remainingAmount = newRemaining;
+      if (newRemaining === 0) update.status = 'settled';
+    } else {
+      // They asked for more — increase both total lent and remaining
+      update.amount = currentDebt.amount + data.amount;
+      update.remainingAmount = currentDebt.remainingAmount + data.amount;
+      update.status = 'active'; // reopen if it was settled
+    }
+
+    await updateDoc(doc(db, 'debts', data.debtId), update);
     return paymentRef.id;
   } catch (error) {
     console.error('Error adding debt payment:', error);

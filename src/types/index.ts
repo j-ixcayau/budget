@@ -84,10 +84,13 @@ export interface Debt {
   status: DebtStatus;
 }
 
+export type DebtTransactionType = 'payment' | 'additional';
+
 export interface DebtPayment {
   id: string;
   debtId: string;
   userId: string;
+  type: DebtTransactionType; // 'payment' = they paid you back; 'additional' = they asked for more
   amount: number;
   date: Timestamp;
   note?: string;

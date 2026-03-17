@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Timestamp } from 'firebase/firestore';
+
+import { Timestamp, deleteField } from 'firebase/firestore';
 import { Button, Input, Select } from '@/components/ui';
 import type { Debt, DebtFormData, Currency } from '@/types';
 
@@ -34,16 +35,17 @@ export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
     setError('');
     setLoading(true);
     try {
-      const payload: DebtFormData = {
+      const payload = {
         personName: formData.personName.trim(),
         amount: parseFloat(formData.amount),
         currency: formData.currency,
         date: Timestamp.fromDate(new Date(formData.date + 'T00:00:00')),
-        ...(formData.dueDate
-          ? { dueDate: Timestamp.fromDate(new Date(formData.dueDate + 'T00:00:00')) }
-          : {}),
-        ...(formData.note.trim() ? { note: formData.note.trim() } : {}),
-      };
+        // Use deleteField() so clearing a value actually removes it from Firestore
+        dueDate: formData.dueDate
+          ? Timestamp.fromDate(new Date(formData.dueDate + 'T00:00:00'))
+          : deleteField(),
+        note: formData.note.trim() || deleteField(),
+      } as unknown as DebtFormData;
       await onSubmit(payload);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
