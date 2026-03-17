@@ -11,17 +11,30 @@ interface RecurringExpenseFormProps {
 }
 
 const CATEGORIES = [
-  'Food', 'Transport', 'Housing', 'Utilities', 'Entertainment',
-  'Health', 'Shopping', 'Salary', 'Freelance', 'Investment', 'Other'
+  'Food',
+  'Transport',
+  'Housing',
+  'Utilities',
+  'Entertainment',
+  'Health',
+  'Shopping',
+  'Salary',
+  'Freelance',
+  'Investment',
+  'Other',
 ];
 
-export function RecurringExpenseForm({ initialData, onSubmit, onCancel }: RecurringExpenseFormProps) {
+export function RecurringExpenseForm({
+  initialData,
+  onSubmit,
+  onCancel,
+}: RecurringExpenseFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     category: initialData?.category || 'Other',
-    currency: initialData?.currency || 'Q' as Currency,
+    currency: initialData?.currency || ('Q' as Currency),
     isFixed: initialData?.isFixed ?? true,
     defaultAmount: initialData?.defaultAmount.toString() || '',
     dayOfMonth: initialData?.dayOfMonth.toString() || '1',
@@ -45,7 +58,9 @@ export function RecurringExpenseForm({ initialData, onSubmit, onCancel }: Recurr
         note: formData.note || '',
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save recurring expense. Please try again.');
+      setError(
+        err instanceof Error ? err.message : 'Failed to save recurring expense. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

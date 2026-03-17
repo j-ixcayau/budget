@@ -17,7 +17,7 @@ export function LiabilityForm({ initialData, onSubmit, onCancel }: LiabilityForm
     name: initialData?.name || '',
     remainingAmount: initialData?.remainingAmount.toString() || '',
     monthlyPayment: initialData?.monthlyPayment.toString() || '',
-    currency: initialData?.currency || 'Q' as Currency,
+    currency: initialData?.currency || ('Q' as Currency),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

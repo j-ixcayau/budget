@@ -33,7 +33,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
         : CUSTOM_COIN_VALUE
       : POPULAR_COINS[0].id,
     customCoinId: isExistingCrypto && !matchesPredefined ? initialData.coinId! : '',
-    customCoinSymbol: isExistingCrypto && !matchesPredefined ? (initialData.coinSymbol || '') : '',
+    customCoinSymbol: isExistingCrypto && !matchesPredefined ? initialData.coinSymbol || '' : '',
     quantity: initialData?.quantity?.toString() || '',
     investedAmount: initialData?.investedAmount?.toString() || '',
     investedCurrency: initialData?.investedCurrency || ('USD' as Currency),
@@ -78,8 +78,8 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
       setFormData({
         ...formData,
         type: newType,
-        name: initialData?.type === 'cash' ? (initialData?.name || '') : '',
-        balance: initialData?.type === 'cash' ? (initialData?.balance?.toString() || '') : '',
+        name: initialData?.type === 'cash' ? initialData?.name || '' : '',
+        balance: initialData?.type === 'cash' ? initialData?.balance?.toString() || '' : '',
       });
     }
   };
@@ -95,7 +95,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
         const coin = POPULAR_COINS.find((c) => c.id === coinId);
         const coinSymbol = isCustomCoin
           ? formData.customCoinSymbol.trim().toUpperCase()
-          : (coin?.symbol || '');
+          : coin?.symbol || '';
         const name = isCustomCoin
           ? formData.name.trim() || `${formData.customCoinSymbol.trim().toUpperCase()}`
           : formData.name;
@@ -210,7 +210,9 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
           <Select
             label="Invested Currency"
             value={formData.investedCurrency}
-            onChange={(e) => setFormData({ ...formData, investedCurrency: e.target.value as Currency })}
+            onChange={(e) =>
+              setFormData({ ...formData, investedCurrency: e.target.value as Currency })
+            }
             options={[
               { value: 'Q', label: 'Q (Quetzal)' },
               { value: 'USD', label: 'USD' },

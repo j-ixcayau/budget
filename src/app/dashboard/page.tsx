@@ -65,7 +65,16 @@ export default function DashboardPage() {
       .filter((d) => d.status === 'active')
       .reduce((sum, d) => sum + convertToBaseCurrency(d.remainingAmount, d.currency, settings), 0);
 
-    return { totalAssets, totalLiabilities, netWorth, monthIncome, monthExpenses, monthTransactions, pendingBills, totalDebtsOwed };
+    return {
+      totalAssets,
+      totalLiabilities,
+      netWorth,
+      monthIncome,
+      monthExpenses,
+      monthTransactions,
+      pendingBills,
+      totalDebtsOwed,
+    };
   }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses, debts]);
 
   const handleLogBill = async (data: TransactionFormData) => {
@@ -82,13 +91,24 @@ export default function DashboardPage() {
 
         {!hasCurrentMonthSnapshot && (
           <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-            <svg className="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="w-5 h-5 text-amber-400 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
             <div className="flex-1">
               <p className="text-sm font-medium text-amber-300">Monthly balance update needed</p>
               <p className="text-xs text-amber-400/70 mt-0.5">
-                Update your asset balances and generate a snapshot for {currentMonth} to keep your net worth history accurate.
+                Update your asset balances and generate a snapshot for {currentMonth} to keep your
+                net worth history accurate.
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -124,7 +144,9 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <div className="text-sm text-zinc-400">Net Worth</div>
-            <div className={`text-2xl font-bold ${stats && stats.netWorth >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+            <div
+              className={`text-2xl font-bold ${stats && stats.netWorth >= 0 ? 'text-blue-400' : 'text-red-400'}`}
+            >
               {stats ? formatCurrency(stats.netWorth, settings?.baseCurrency) : '—'}
             </div>
           </Card>
@@ -142,8 +164,12 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <div className="text-sm text-zinc-400">This Month Balance</div>
-            <div className={`text-2xl font-bold ${stats && (stats.monthIncome - stats.monthExpenses) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {stats ? formatCurrency(stats.monthIncome - stats.monthExpenses, settings?.baseCurrency) : '—'}
+            <div
+              className={`text-2xl font-bold ${stats && stats.monthIncome - stats.monthExpenses >= 0 ? 'text-green-400' : 'text-red-400'}`}
+            >
+              {stats
+                ? formatCurrency(stats.monthIncome - stats.monthExpenses, settings?.baseCurrency)
+                : '—'}
             </div>
           </Card>
           <Card>
@@ -151,7 +177,10 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold text-emerald-400">
               {stats ? formatCurrency(stats.totalDebtsOwed, settings?.baseCurrency) : '—'}
             </div>
-            <a href="/debts" className="text-xs text-zinc-500 hover:text-zinc-300 mt-1 inline-block transition-colors">
+            <a
+              href="/debts"
+              className="text-xs text-zinc-500 hover:text-zinc-300 mt-1 inline-block transition-colors"
+            >
               View debts →
             </a>
           </Card>
@@ -164,18 +193,32 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 {!stats || stats.pendingBills.length === 0 ? (
                   <div className="text-sm text-zinc-500 py-4 flex flex-col items-center gap-2">
-                    <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-8 h-8 opacity-20"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     All caught up!
                   </div>
                 ) : (
                   stats.pendingBills.map((bill) => (
-                    <div key={bill.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg group">
+                    <div
+                      key={bill.id}
+                      className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg group"
+                    >
                       <div>
                         <div className="text-sm font-medium text-zinc-100">{bill.name}</div>
                         <div className="text-xs text-zinc-500">
-                          Due day: {bill.dayOfMonth} • {formatCurrency(bill.defaultAmount, bill.currency)}
+                          Due day: {bill.dayOfMonth} •{' '}
+                          {formatCurrency(bill.defaultAmount, bill.currency)}
                         </div>
                       </div>
                       <button
@@ -200,7 +243,9 @@ export default function DashboardPage() {
               {settings && stats ? (
                 <ExpensesPieChart transactions={stats.monthTransactions} settings={settings} />
               ) : (
-                <div className="h-64 flex items-center justify-center text-zinc-500">Loading...</div>
+                <div className="h-64 flex items-center justify-center text-zinc-500">
+                  Loading...
+                </div>
               )}
             </Card>
           </div>

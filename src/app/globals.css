@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: #09090b;
@@ -14,7 +14,7 @@
   .glass {
     @apply bg-zinc-900/40 backdrop-blur-md border border-zinc-100/10 shadow-xl;
   }
-  
+
   .glass-card {
     @apply bg-zinc-900/20 backdrop-blur-lg border border-white/5 shadow-2xl;
   }

@@ -9,9 +9,7 @@ export function useCryptoPrices(assets: Asset[]) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const coinIds = assets
-    .filter((a) => a.type === 'crypto' && a.coinId)
-    .map((a) => a.coinId!);
+  const coinIds = assets.filter((a) => a.type === 'crypto' && a.coinId).map((a) => a.coinId!);
 
   const coinIdsKey = [...new Set(coinIds)].sort().join(',');
 

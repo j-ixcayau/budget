@@ -59,13 +59,13 @@ export interface UserSettings {
 export interface RecurringExpense {
   id: string;
   userId: string;
-  name: string;         // e.g. "Internet", "Water", "Netflix"
-  category: string;     // reuses existing transaction categories
+  name: string; // e.g. "Internet", "Water", "Netflix"
+  category: string; // reuses existing transaction categories
   currency: Currency;
-  isFixed: boolean;     // true = fixed amount every month
+  isFixed: boolean; // true = fixed amount every month
   defaultAmount: number; // amount if fixed, or a typical hint if variable
-  dayOfMonth: number;   // expected due day (1–31)
-  isActive: boolean;    // false = paused/hidden from reminders
+  dayOfMonth: number; // expected due day (1–31)
+  isActive: boolean; // false = paused/hidden from reminders
   note?: string;
 }
 
@@ -74,12 +74,12 @@ export type DebtStatus = 'active' | 'settled';
 export interface Debt {
   id: string;
   userId: string;
-  personName: string;       // who owes you
-  amount: number;           // original amount lent
-  remainingAmount: number;  // decreases as payments come in
+  personName: string; // who owes you
+  amount: number; // original amount lent
+  remainingAmount: number; // decreases as payments come in
   currency: Currency;
   date: Timestamp;
-  dueDate?: Timestamp;      // optional expected repayment date
+  dueDate?: Timestamp; // optional expected repayment date
   note?: string;
   status: DebtStatus;
 }

@@ -1,9 +1,9 @@
 import type { Currency, UserSettings } from '@/types';
 
 export interface CoinInfo {
-  id: string;       // CoinGecko ID
-  symbol: string;   // e.g. "BTC"
-  name: string;     // e.g. "Bitcoin"
+  id: string; // CoinGecko ID
+  symbol: string; // e.g. "BTC"
+  name: string; // e.g. "Bitcoin"
 }
 
 export const POPULAR_COINS: CoinInfo[] = [

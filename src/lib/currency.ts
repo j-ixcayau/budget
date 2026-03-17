@@ -59,5 +59,8 @@ export function calculateNetWorth(
   settings: UserSettings,
   cryptoPrices?: CryptoPrices
 ): number {
-  return calculateTotalAssets(assets, settings, cryptoPrices) - calculateTotalLiabilities(liabilities, settings);
+  return (
+    calculateTotalAssets(assets, settings, cryptoPrices) -
+    calculateTotalLiabilities(liabilities, settings)
+  );
 }

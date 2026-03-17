@@ -13,7 +13,7 @@ export function isBillLoggedThisMonth(
   monthTransactions: Transaction[]
 ): boolean {
   const nameLower = expense.name.toLowerCase();
-  return monthTransactions.some(tx => {
+  return monthTransactions.some((tx) => {
     if (tx.note?.toLowerCase().includes(nameLower)) return true;
 
     if (tx.category === expense.category && expense.isFixed) {
@@ -32,7 +32,7 @@ export function getPendingBills(
   recurringExpenses: RecurringExpense[],
   monthTransactions: Transaction[]
 ): RecurringExpense[] {
-  return recurringExpenses.filter(expense => {
+  return recurringExpenses.filter((expense) => {
     if (!expense.isActive) return false;
     return !isBillLoggedThisMonth(expense, monthTransactions);
   });
@@ -47,8 +47,8 @@ export function getUpcomingBills(
 ): RecurringExpense[] {
   const today = new Date().getDate();
   const limit = today + daysAhead;
-  
-  return pendingBills.filter(bill => {
+
+  return pendingBills.filter((bill) => {
     // If today is late in the month, dayOfMonth might be smaller than today (next month's bill)
     // but here we focus on bills due in the CURRENT month.
     return bill.dayOfMonth >= today && bill.dayOfMonth <= limit;

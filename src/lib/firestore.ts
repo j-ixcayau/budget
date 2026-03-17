@@ -51,7 +51,7 @@ async function getCollection<T>(
     }
     const q = query(collection(db, collectionName), ...constraints);
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as T));
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as T);
   } catch (error) {
     console.error(`Error fetching ${collectionName}:`, error);
     throw error;
@@ -131,10 +131,7 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
   return getCollection<Transaction>('transactions', userId, 'date', 'desc');
 }
 
-export async function addTransaction(
-  userId: string,
-  data: TransactionFormData
-): Promise<string> {
+export async function addTransaction(userId: string, data: TransactionFormData): Promise<string> {
   return addToCollection('transactions', userId, data);
 }
 
@@ -184,17 +181,11 @@ export async function getLiabilities(userId: string): Promise<Liability[]> {
   return getCollection<Liability>('liabilities', userId);
 }
 
-export async function addLiability(
-  userId: string,
-  data: LiabilityFormData
-): Promise<string> {
+export async function addLiability(userId: string, data: LiabilityFormData): Promise<string> {
   return addToCollection('liabilities', userId, data);
 }
 
-export async function updateLiability(
-  id: string,
-  data: Partial<LiabilityFormData>
-): Promise<void> {
+export async function updateLiability(id: string, data: Partial<LiabilityFormData>): Promise<void> {
   return updateInCollection('liabilities', id, data);
 }
 
@@ -246,10 +237,7 @@ export function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function getMonthTransactions(
-  transactions: Transaction[],
-  month: string
-): Transaction[] {
+export function getMonthTransactions(transactions: Transaction[], month: string): Transaction[] {
   return transactions.filter((t) => {
     const date = t.date.toDate();
     const txMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -296,7 +284,7 @@ export async function getDebtPayments(debtId: string, userId: string): Promise<D
       orderBy('date', 'desc')
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as DebtPayment));
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as DebtPayment);
   } catch (error) {
     console.error('Error fetching debt payments:', error);
     throw error;

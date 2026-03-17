@@ -12,19 +12,30 @@ interface TransactionFormProps {
 }
 
 const CATEGORIES = [
-  'Food', 'Transport', 'Housing', 'Utilities', 'Entertainment',
-  'Health', 'Shopping', 'Salary', 'Freelance', 'Investment', 'Other'
+  'Food',
+  'Transport',
+  'Housing',
+  'Utilities',
+  'Entertainment',
+  'Health',
+  'Shopping',
+  'Salary',
+  'Freelance',
+  'Investment',
+  'Other',
 ];
 
 export function TransactionForm({ initialData, onSubmit, onCancel }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    date: initialData?.date.toDate().toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+    date:
+      initialData?.date.toDate().toISOString().split('T')[0] ||
+      new Date().toISOString().split('T')[0],
     amount: initialData?.amount.toString() || '',
-    type: initialData?.type || 'expense' as TransactionType,
+    type: initialData?.type || ('expense' as TransactionType),
     category: initialData?.category || 'Other',
-    currency: initialData?.currency || 'Q' as Currency,
+    currency: initialData?.currency || ('Q' as Currency),
     note: initialData?.note || '',
   });
 
@@ -42,7 +53,9 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
         note: formData.note || '',
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save transaction. Please try again.');
+      setError(
+        err instanceof Error ? err.message : 'Failed to save transaction. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

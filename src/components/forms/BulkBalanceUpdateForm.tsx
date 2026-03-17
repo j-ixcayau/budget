@@ -12,16 +12,18 @@ interface BulkBalanceUpdateFormProps {
   onCancel: () => void;
 }
 
-export function BulkBalanceUpdateForm({ assets, onComplete, onCancel }: BulkBalanceUpdateFormProps) {
+export function BulkBalanceUpdateForm({
+  assets,
+  onComplete,
+  onCancel,
+}: BulkBalanceUpdateFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [balances, setBalances] = useState<Record<string, string>>(
     Object.fromEntries(assets.map((a) => [a.id, a.balance.toString()]))
   );
 
-  const changedCount = assets.filter(
-    (a) => parseFloat(balances[a.id] || '0') !== a.balance
-  ).length;
+  const changedCount = assets.filter((a) => parseFloat(balances[a.id] || '0') !== a.balance).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +98,9 @@ export function BulkBalanceUpdateForm({ assets, onComplete, onCancel }: BulkBala
 
       <div className="flex items-center justify-between pt-2">
         <span className="text-xs text-zinc-500">
-          {changedCount > 0 ? `${changedCount} balance${changedCount > 1 ? 's' : ''} changed` : 'No changes'}
+          {changedCount > 0
+            ? `${changedCount} balance${changedCount > 1 ? 's' : ''} changed`
+            : 'No changes'}
         </span>
         <div className="flex gap-3">
           <Button type="submit" disabled={loading}>

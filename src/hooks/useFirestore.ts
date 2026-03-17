@@ -24,9 +24,7 @@ import type {
 /**
  * Generic hook to fetch a Firestore collection for the current user.
  */
-function useFirestoreCollection<T>(
-  fetchFn: (userId: string) => Promise<T[]>
-) {
+function useFirestoreCollection<T>(fetchFn: (userId: string) => Promise<T[]>) {
   const { user } = useAuth();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);

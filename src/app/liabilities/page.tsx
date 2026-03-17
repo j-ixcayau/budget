@@ -52,7 +52,10 @@ export default function LiabilitiesPage() {
           ) : (
             <div className="space-y-3">
               {liabilities.map((liability) => (
-                <div key={liability.id} className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-lg">
+                <div
+                  key={liability.id}
+                  className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-lg"
+                >
                   <div className="flex-1">
                     <div className="text-zinc-100 font-medium">{liability.name}</div>
                     <div className="flex gap-6 mt-1">
@@ -96,7 +99,11 @@ export default function LiabilitiesPage() {
         </Modal>
 
         {/* Edit Modal */}
-        <Modal isOpen={!!editingLiability} onClose={() => setEditingLiability(null)} title="Edit Liability">
+        <Modal
+          isOpen={!!editingLiability}
+          onClose={() => setEditingLiability(null)}
+          title="Edit Liability"
+        >
           {editingLiability && (
             <LiabilityForm
               initialData={editingLiability}

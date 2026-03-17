@@ -61,7 +61,9 @@ export default function SettingsPage() {
               <Select
                 label="Base Currency"
                 value={formData.baseCurrency}
-                onChange={(e) => setFormData({ ...formData, baseCurrency: e.target.value as Currency })}
+                onChange={(e) =>
+                  setFormData({ ...formData, baseCurrency: e.target.value as Currency })
+                }
                 options={[
                   { value: 'Q', label: 'Q (Quetzal)' },
                   { value: 'USD', label: 'USD' },
@@ -74,10 +76,10 @@ export default function SettingsPage() {
                   Conversion Rates (to base currency)
                 </h4>
                 <p className="text-xs text-zinc-500 mb-4">
-                  Enter the rate to convert each currency to your base currency.
-                  For example, if 1 USD = 7.75 Q, enter 7.75 for USD rate.
+                  Enter the rate to convert each currency to your base currency. For example, if 1
+                  USD = 7.75 Q, enter 7.75 for USD rate.
                 </p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     label="1 Q ="

@@ -87,13 +87,25 @@ export default function TransactionsPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-12 flex flex-col items-center gap-4 text-center">
-              <svg className="w-12 h-12 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <svg
+                className="w-12 h-12 text-zinc-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
               </svg>
               <div>
                 <p className="text-zinc-300 font-medium">No transactions yet</p>
                 <p className="text-zinc-500 text-sm mt-1">
-                  {selectedMonth !== 'all' ? 'No transactions for this month.' : 'Add your first transaction to get started.'}
+                  {selectedMonth !== 'all'
+                    ? 'No transactions for this month.'
+                    : 'Add your first transaction to get started.'}
                 </p>
               </div>
               {selectedMonth === 'all' && (
@@ -120,21 +132,28 @@ export default function TransactionsPage() {
                         {t.date.toDate().toLocaleDateString()}
                       </td>
                       <td className="py-3">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          t.type === 'income' 
-                            ? 'bg-green-500/20 text-green-400' 
-                            : 'bg-red-500/20 text-red-400'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            t.type === 'income'
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-red-500/20 text-red-400'
+                          }`}
+                        >
                           {t.type}
                         </span>
                       </td>
                       <td className="py-3 text-zinc-300 text-sm">{t.category}</td>
-                      <td className={`py-3 font-medium text-sm ${
-                        t.type === 'income' ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount, t.currency)}
+                      <td
+                        className={`py-3 font-medium text-sm ${
+                          t.type === 'income' ? 'text-green-400' : 'text-red-400'
+                        }`}
+                      >
+                        {t.type === 'income' ? '+' : '-'}
+                        {formatCurrency(t.amount, t.currency)}
                       </td>
-                      <td className="py-3 text-zinc-400 text-sm hidden sm:table-cell">{t.note || '—'}</td>
+                      <td className="py-3 text-zinc-400 text-sm hidden sm:table-cell">
+                        {t.note || '—'}
+                      </td>
                       <td className="py-3">
                         <div className="flex gap-2">
                           <button
@@ -160,11 +179,7 @@ export default function TransactionsPage() {
         </Card>
 
         {/* Add Modal */}
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title="Add Transaction"
-        >
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Transaction">
           <TransactionForm onSubmit={handleAdd} onCancel={() => setIsModalOpen(false)} />
         </Modal>
 

@@ -32,7 +32,7 @@ export default function SnapshotsPage() {
     if (!user || !settings) return;
 
     const currentMonth = getCurrentMonth();
-    
+
     // Check if snapshot already exists for this month
     const exists = snapshots.some((s) => s.month === currentMonth);
     if (exists) {
@@ -81,7 +81,8 @@ export default function SnapshotsPage() {
             <div className="text-zinc-400">Loading...</div>
           ) : snapshots.length === 0 ? (
             <div className="text-zinc-400">
-              No snapshots yet. Click &quot;Generate Snapshot&quot; to create your first monthly snapshot.
+              No snapshots yet. Click &quot;Generate Snapshot&quot; to create your first monthly
+              snapshot.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -105,9 +106,11 @@ export default function SnapshotsPage() {
                       <td className="py-3 text-red-400">
                         {formatCurrency(snapshot.totalLiabilities)}
                       </td>
-                      <td className={`py-3 font-semibold ${
-                        snapshot.netWorth >= 0 ? 'text-blue-400' : 'text-red-400'
-                      }`}>
+                      <td
+                        className={`py-3 font-semibold ${
+                          snapshot.netWorth >= 0 ? 'text-blue-400' : 'text-red-400'
+                        }`}
+                      >
                         {formatCurrency(snapshot.netWorth)}
                       </td>
                       <td className="py-3">

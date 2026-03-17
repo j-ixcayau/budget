@@ -31,13 +31,7 @@ export function NetWorthChart({ snapshots, settings }: NetWorthChartProps) {
   return (
     <ResponsiveContainer width="100%" height={256}>
       <LineChart data={data}>
-        <XAxis
-          dataKey="month"
-          stroke="#71717a"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
+        <XAxis dataKey="month" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
         <YAxis
           stroke="#71717a"
           fontSize={12}
