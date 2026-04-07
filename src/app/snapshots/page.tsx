@@ -3,12 +3,7 @@
 import { useState } from 'react';
 import { AuthGuard } from '@/components/layout';
 import { Card, Button } from '@/components/ui';
-import {
-  useAssets,
-  useLiabilities,
-  useMonthlySnapshots,
-  useUserSettings,
-} from '@/hooks/useFirestore';
+import { useAssets, useMonthlySnapshots, useUserSettings, useDebts } from '@/hooks/useFirestore';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useAuth } from '@/hooks/useAuth';
 import { addMonthlySnapshot, deleteMonthlySnapshot, getCurrentMonth } from '@/lib/firestore';
@@ -22,7 +17,7 @@ import {
 export default function SnapshotsPage() {
   const { user } = useAuth();
   const { assets } = useAssets();
-  const { liabilities } = useLiabilities();
+  const { debts: liabilities } = useDebts('i_owe');
   const { snapshots, loading, refresh } = useMonthlySnapshots();
   const { settings } = useUserSettings();
   const { prices } = useCryptoPrices(assets);

@@ -1,4 +1,4 @@
-import type { Currency, UserSettings, Asset, Liability } from '@/types';
+import type { Currency, UserSettings, Asset, Debt } from '@/types';
 import type { CryptoPrices } from '@/lib/crypto';
 
 export function convertToBaseCurrency(
@@ -44,10 +44,7 @@ export function calculateTotalAssets(
   }, 0);
 }
 
-export function calculateTotalLiabilities(
-  liabilities: Liability[],
-  settings: UserSettings
-): number {
+export function calculateTotalLiabilities(liabilities: Debt[], settings: UserSettings): number {
   return liabilities.reduce((total, liability) => {
     return total + convertToBaseCurrency(liability.remainingAmount, liability.currency, settings);
   }, 0);
@@ -55,7 +52,7 @@ export function calculateTotalLiabilities(
 
 export function calculateNetWorth(
   assets: Asset[],
-  liabilities: Liability[],
+  liabilities: Debt[],
   settings: UserSettings,
   cryptoPrices?: CryptoPrices
 ): number {

@@ -17,12 +17,10 @@ import { db } from './firebase';
 import type {
   Transaction,
   Asset,
-  Liability,
   MonthlySnapshot,
   UserSettings,
   TransactionFormData,
   AssetFormData,
-  LiabilityFormData,
   RecurringExpense,
   RecurringExpenseFormData,
   Debt,
@@ -176,23 +174,6 @@ export async function bulkUpdateAssetBalances(
   }
 }
 
-// ============ Liabilities ============
-export async function getLiabilities(userId: string): Promise<Liability[]> {
-  return getCollection<Liability>('liabilities', userId);
-}
-
-export async function addLiability(userId: string, data: LiabilityFormData): Promise<string> {
-  return addToCollection('liabilities', userId, data);
-}
-
-export async function updateLiability(id: string, data: Partial<LiabilityFormData>): Promise<void> {
-  return updateInCollection('liabilities', id, data);
-}
-
-export async function deleteLiability(id: string): Promise<void> {
-  return deleteFromCollection('liabilities', id);
-}
-
 // ============ Monthly Snapshots ============
 export async function getMonthlySnapshots(userId: string): Promise<MonthlySnapshot[]> {
   return getCollection<MonthlySnapshot>('monthlySnapshots', userId, 'month', 'desc');
@@ -262,10 +243,14 @@ export async function updateDebt(id: string, data: Partial<DebtFormData>): Promi
   return updateInCollection('debts', id, data);
 }
 
-export async function deleteDebt(id: string): Promise<void> {
+export async function deleteDebt(id: string, userId: string): Promise<void> {
   // Also delete all payments for this debt
   try {
-    const q = query(collection(db, 'debtPayments'), where('debtId', '==', id));
+    const q = query(
+      collection(db, 'debtPayments'),
+      where('userId', '==', userId),
+      where('debtId', '==', id)
+    );
     const snapshot = await getDocs(q);
     await Promise.all(snapshot.docs.map((d) => deleteDoc(doc(db, 'debtPayments', d.id))));
     await deleteFromCollection('debts', id);

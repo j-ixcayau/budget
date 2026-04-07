@@ -5,7 +5,6 @@ import { useAuth } from './useAuth';
 import {
   getTransactions,
   getAssets,
-  getLiabilities,
   getMonthlySnapshots,
   getUserSettings,
   getRecurringExpenses,
@@ -14,11 +13,11 @@ import {
 import type {
   Transaction,
   Asset,
-  Liability,
   MonthlySnapshot,
   UserSettings,
   RecurringExpense,
   Debt,
+  DebtType,
 } from '@/types';
 
 /**
@@ -66,11 +65,6 @@ export function useAssets() {
   return { assets, ...rest };
 }
 
-export function useLiabilities() {
-  const { data: liabilities, ...rest } = useFirestoreCollection(getLiabilities);
-  return { liabilities, ...rest };
-}
-
 export function useMonthlySnapshots() {
   const { data: snapshots, ...rest } = useFirestoreCollection(getMonthlySnapshots);
   return { snapshots, ...rest };
@@ -81,9 +75,12 @@ export function useRecurringExpenses() {
   return { recurringExpenses, ...rest };
 }
 
-export function useDebts() {
-  const { data: debts, ...rest } = useFirestoreCollection<Debt>(getDebts);
-  return { debts, ...rest };
+export function useDebts(type?: DebtType) {
+  const { data: allDebts, ...rest } = useFirestoreCollection<Debt>(getDebts);
+  return {
+    debts: type ? allDebts.filter((d) => (d.debtType || 'owed_to_me') === type) : allDebts,
+    ...rest,
+  };
 }
 
 export function useUserSettings() {

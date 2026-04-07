@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   useTransactions,
   useAssets,
-  useLiabilities,
   useMonthlySnapshots,
   useUserSettings,
   useRecurringExpenses,
@@ -31,11 +30,11 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { transactions, refresh: refreshTransactions } = useTransactions();
   const { assets } = useAssets();
-  const { liabilities } = useLiabilities();
+  const { debts: liabilities } = useDebts('i_owe');
   const { snapshots } = useMonthlySnapshots();
   const { settings } = useUserSettings();
   const { recurringExpenses } = useRecurringExpenses();
-  const { debts } = useDebts();
+  const { debts: owedDebts } = useDebts('owed_to_me');
 
   const [logExpense, setLogExpense] = useState<RecurringExpense | null>(null);
 
@@ -61,7 +60,7 @@ export default function DashboardPage() {
     // Calculate pending bills using shared utility
     const pendingBills = getPendingBills(recurringExpenses, monthTransactions);
 
-    const totalDebtsOwed = debts
+    const totalDebtsOwed = owedDebts
       .filter((d) => d.status === 'active')
       .reduce((sum, d) => sum + convertToBaseCurrency(d.remainingAmount, d.currency, settings), 0);
 
@@ -75,7 +74,7 @@ export default function DashboardPage() {
       pendingBills,
       totalDebtsOwed,
     };
-  }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses, debts]);
+  }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses, owedDebts]);
 
   const handleLogBill = async (data: TransactionFormData) => {
     if (!user) return;

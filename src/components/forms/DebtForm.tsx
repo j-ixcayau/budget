@@ -4,9 +4,10 @@ import { useState } from 'react';
 
 import { Timestamp, deleteField } from 'firebase/firestore';
 import { Button, Input, Select } from '@/components/ui';
-import type { Debt, DebtFormData, Currency } from '@/types';
+import type { Debt, DebtFormData, Currency, DebtType } from '@/types';
 
 interface DebtFormProps {
+  debtType: DebtType;
   initialData?: Debt;
   onSubmit: (data: DebtFormData) => Promise<void>;
   onCancel: () => void;
@@ -18,17 +19,20 @@ function toInputDate(ts?: Timestamp): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
+export function DebtForm({ debtType, initialData, onSubmit, onCancel }: DebtFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    personName: initialData?.personName || '',
+    name: initialData?.name || '',
     amount: initialData?.amount.toString() || '',
     currency: (initialData?.currency || 'Q') as Currency,
     date: toInputDate(initialData?.date) || new Date().toISOString().slice(0, 10),
     dueDate: toInputDate(initialData?.dueDate) || '',
+    monthlyPayment: initialData?.monthlyPayment?.toString() || '',
     note: initialData?.note || '',
   });
+
+  const isOwedToMe = debtType === 'owed_to_me';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,13 +40,16 @@ export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
     setLoading(true);
     try {
       const payload = {
-        personName: formData.personName.trim(),
+        name: formData.name.trim(),
         amount: parseFloat(formData.amount),
         currency: formData.currency,
+        debtType,
         date: Timestamp.fromDate(new Date(formData.date + 'T00:00:00')),
-        // Use deleteField() so clearing a value actually removes it from Firestore
         dueDate: formData.dueDate
           ? Timestamp.fromDate(new Date(formData.dueDate + 'T00:00:00'))
+          : deleteField(),
+        monthlyPayment: formData.monthlyPayment
+          ? parseFloat(formData.monthlyPayment)
           : deleteField(),
         note: formData.note.trim() || deleteField(),
       } as unknown as DebtFormData;
@@ -57,14 +64,14 @@ export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Person Name"
-        placeholder="e.g., John, Mom, Alice"
-        value={formData.personName}
-        onChange={(e) => setFormData({ ...formData, personName: e.target.value })}
+        label={isOwedToMe ? 'Person Name' : 'Name (Person or Institution)'}
+        placeholder={isOwedToMe ? 'e.g., John, Mom, Alice' : 'e.g., The Bank, John'}
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         required
       />
       <Input
-        label="Amount Lent"
+        label={isOwedToMe ? 'Amount Lent' : 'Amount Borrowed (Total)'}
         type="number"
         step="0.01"
         min="0.01"
@@ -83,7 +90,7 @@ export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
         ]}
       />
       <Input
-        label="Date Lent"
+        label={isOwedToMe ? 'Date Lent' : 'Date Borrowed'}
         type="date"
         value={formData.date}
         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
@@ -94,6 +101,14 @@ export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
         type="date"
         value={formData.dueDate}
         onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+      />
+      <Input
+        label="Monthly Payment (optional)"
+        type="number"
+        step="0.01"
+        min="0"
+        value={formData.monthlyPayment}
+        onChange={(e) => setFormData({ ...formData, monthlyPayment: e.target.value })}
       />
       <div className="space-y-1">
         <label className="block text-sm font-medium text-zinc-300">Note (optional)</label>
@@ -114,7 +129,13 @@ export function DebtForm({ initialData, onSubmit, onCancel }: DebtFormProps) {
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : initialData ? 'Update' : 'Add Debt'}
+          {loading
+            ? 'Saving...'
+            : initialData
+              ? 'Update'
+              : isOwedToMe
+                ? 'Add Debt'
+                : 'Add Liability'}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel

@@ -306,7 +306,7 @@ type Tab = 'active' | 'settled';
 
 export default function DebtsPage() {
   const { user } = useAuth();
-  const { debts, loading, refresh } = useDebts();
+  const { debts, loading, refresh } = useDebts('owed_to_me');
   const { settings } = useUserSettings();
 
   const [tab, setTab] = useState<Tab>('active');
@@ -328,7 +328,7 @@ export default function DebtsPage() {
 
   const handleAdd = async (data: DebtFormData) => {
     if (!user) return;
-    await addDebt(user.uid, data);
+    await addDebt(user.uid, { ...data, debtType: 'owed_to_me' } as DebtFormData);
     await refresh();
     setIsAddOpen(false);
   };
@@ -342,12 +342,13 @@ export default function DebtsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this debt and all its transactions?')) return;
-    await deleteDebt(id);
+    if (!user) return;
+    await deleteDebt(id, user.uid);
     await refresh();
   };
 
   const handleSettle = async (debt: Debt) => {
-    if (!confirm(`Mark "${debt.personName}" as fully settled?`)) return;
+    if (!confirm(`Mark "${debt.name}" as fully settled?`)) return;
     await markDebtSettled(debt.id);
     await refresh();
   };
@@ -432,7 +433,7 @@ export default function DebtsPage() {
                       <div className="flex-1 min-w-0">
                         {/* Person + status badges */}
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-zinc-100 font-semibold">{debt.personName}</span>
+                          <span className="text-zinc-100 font-semibold">{debt.name}</span>
                           {debt.status === 'settled' && (
                             <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                               Settled
@@ -517,13 +518,14 @@ export default function DebtsPage() {
 
       {/* Add Modal */}
       <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add Debt">
-        <DebtForm onSubmit={handleAdd} onCancel={() => setIsAddOpen(false)} />
+        <DebtForm debtType="owed_to_me" onSubmit={handleAdd} onCancel={() => setIsAddOpen(false)} />
       </Modal>
 
       {/* Edit Modal */}
       <Modal isOpen={!!editingDebt} onClose={() => setEditingDebt(null)} title="Edit Debt">
         {editingDebt && (
           <DebtForm
+            debtType="owed_to_me"
             initialData={editingDebt}
             onSubmit={handleEdit}
             onCancel={() => setEditingDebt(null)}
@@ -535,7 +537,7 @@ export default function DebtsPage() {
       <Modal
         isOpen={!!transactionDebt}
         onClose={() => setTransactionDebt(null)}
-        title={`Transaction — ${transactionDebt?.personName}`}
+        title={`Transaction — ${transactionDebt?.name}`}
       >
         {transactionDebt && (
           <TransactionForm

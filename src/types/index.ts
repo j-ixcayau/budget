@@ -29,15 +29,6 @@ export interface Asset {
   investedCurrency?: Currency;
 }
 
-export interface Liability {
-  id: string;
-  userId: string;
-  name: string;
-  remainingAmount: number;
-  monthlyPayment: number;
-  currency: Currency;
-}
-
 export interface MonthlySnapshot {
   id: string;
   userId: string;
@@ -70,18 +61,21 @@ export interface RecurringExpense {
 }
 
 export type DebtStatus = 'active' | 'settled';
+export type DebtType = 'owed_to_me' | 'i_owe';
 
 export interface Debt {
   id: string;
   userId: string;
-  personName: string; // who owes you
-  amount: number; // original amount lent
+  name: string; // The person/institution you owe or who owes you
+  amount: number; // original amount lent or borrowed
   remainingAmount: number; // decreases as payments come in
+  monthlyPayment?: number; // optionally track a monthly expected payment
   currency: Currency;
   date: Timestamp;
   dueDate?: Timestamp; // optional expected repayment date
   note?: string;
   status: DebtStatus;
+  debtType: DebtType;
 }
 
 export type DebtTransactionType = 'payment' | 'additional';
@@ -99,7 +93,6 @@ export interface DebtPayment {
 // Form types (without id and userId)
 export type TransactionFormData = Omit<Transaction, 'id' | 'userId'>;
 export type AssetFormData = Omit<Asset, 'id' | 'userId'>;
-export type LiabilityFormData = Omit<Liability, 'id' | 'userId'>;
 export type RecurringExpenseFormData = Omit<RecurringExpense, 'id' | 'userId'>;
 export type DebtFormData = Omit<Debt, 'id' | 'userId' | 'remainingAmount' | 'status'>;
 export type DebtPaymentFormData = Omit<DebtPayment, 'id' | 'userId'>;
