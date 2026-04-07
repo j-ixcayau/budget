@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import type { MonthlySnapshot, UserSettings } from '@/types';
 import { formatCurrency } from '@/lib/currency';
@@ -13,12 +14,14 @@ export function NetWorthChart({ snapshots, settings }: NetWorthChartProps) {
   const baseCurrency = settings?.baseCurrency ?? 'Q';
 
   // Sort by month ascending for the chart
-  const data = [...snapshots]
-    .sort((a, b) => a.month.localeCompare(b.month))
-    .map((s) => ({
-      month: s.month,
-      netWorth: s.netWorth,
-    }));
+  const data = useMemo(() => {
+    return [...snapshots]
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map((s) => ({
+        month: s.month,
+        netWorth: s.netWorth,
+      }));
+  }, [snapshots]);
 
   if (data.length === 0) {
     return (

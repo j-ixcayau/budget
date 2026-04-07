@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import type { Transaction, UserSettings } from '@/types';
 import { convertToBaseCurrency, formatCurrency } from '@/lib/currency';
@@ -37,9 +38,11 @@ export function ExpensesPieChart({ transactions, settings }: ExpensesPieChartPro
     {} as Record<string, number>
   );
 
-  const data = Object.entries(categoryTotals)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
+  const data = useMemo(() => {
+    return Object.entries(categoryTotals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [categoryTotals]);
 
   if (data.length === 0) {
     return (
@@ -61,7 +64,7 @@ export function ExpensesPieChart({ transactions, settings }: ExpensesPieChartPro
           paddingAngle={2}
           dataKey="value"
         >
-          {data.map((_, index) => (
+          {data.map((_entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { AuthGuard } from '@/components/layout';
 import { Card, Button, Modal } from '@/components/ui';
 import { NetWorthChart, ExpensesPieChart } from '@/components/charts';
@@ -111,18 +112,18 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
-              <a
+              <Link
                 href="/assets"
                 className="bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
               >
                 Update Balances
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/snapshots"
                 className="bg-zinc-700/50 text-zinc-300 hover:bg-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
               >
                 Snapshots
-              </a>
+              </Link>
             </div>
           </div>
         )}
@@ -176,12 +177,12 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold text-emerald-400">
               {stats ? formatCurrency(stats.totalDebtsOwed, settings?.baseCurrency) : '—'}
             </div>
-            <a
+            <Link
               href="/debts"
               className="text-xs text-zinc-500 hover:text-zinc-300 mt-1 inline-block transition-colors"
             >
               View debts →
-            </a>
+            </Link>
           </Card>
         </div>
 
