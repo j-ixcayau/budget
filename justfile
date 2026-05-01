@@ -23,3 +23,7 @@ dev:
 # Build for production
 build:
     npm run build
+
+# Build and deploy hosting, Firestore rules/indexes, and Cloud Functions
+deploy:
+    npm run deploy
