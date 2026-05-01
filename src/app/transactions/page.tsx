@@ -12,7 +12,7 @@ import type { Transaction, TransactionFormData } from '@/types';
 
 export default function TransactionsPage() {
   const { user } = useAuth();
-  const { transactions, loading, refresh } = useTransactions();
+  const { transactions, loading } = useTransactions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -20,21 +20,18 @@ export default function TransactionsPage() {
   const handleAdd = async (data: TransactionFormData) => {
     if (!user) return;
     await addTransaction(user.uid, data);
-    await refresh();
     setIsModalOpen(false);
   };
 
   const handleEdit = async (data: TransactionFormData) => {
     if (!editingTransaction) return;
     await updateTransaction(editingTransaction.id, data);
-    await refresh();
     setEditingTransaction(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this transaction?')) return;
     await deleteTransaction(id);
-    await refresh();
   };
 
   // Build list of unique months from transactions

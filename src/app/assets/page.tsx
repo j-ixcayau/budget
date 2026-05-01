@@ -255,25 +255,22 @@ export default function AssetsPage() {
   const handleAdd = async (data: AssetFormData) => {
     if (!user) return;
     await addAsset(user.uid, data);
-    await refresh();
     setIsModalOpen(false);
   };
 
   const handleEdit = async (data: AssetFormData) => {
     if (!editingAsset) return;
     await updateAsset(editingAsset.id, data);
-    await refresh();
     setEditingAsset(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this asset?')) return;
     await deleteAsset(id);
-    await refresh();
   };
 
-  const cashAssets = assets.filter((a) => a.type === 'cash');
-  const cryptoAssets = assets.filter((a) => a.type === 'crypto');
+  const cashAssets = useMemo(() => assets.filter((a) => a.type === 'cash'), [assets]);
+  const cryptoAssets = useMemo(() => assets.filter((a) => a.type === 'crypto'), [assets]);
 
   return (
     <AuthGuard>

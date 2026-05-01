@@ -6,11 +6,12 @@ import { Card, Button, Input, Select } from '@/components/ui';
 import { useUserSettings } from '@/hooks/useFirestore';
 import { useAuth } from '@/hooks/useAuth';
 import { updateUserSettings } from '@/lib/firestore';
+import { CURRENCY_OPTIONS } from '@/lib/constants';
 import type { Currency } from '@/types';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { settings, loading, refresh } = useUserSettings();
+  const { settings, loading } = useUserSettings();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     baseCurrency: 'Q' as Currency,
@@ -42,7 +43,7 @@ export default function SettingsPage() {
           Q: parseFloat(formData.rateQ),
         },
       });
-      await refresh();
+      // onSnapshot in useUserSettings automatically reflects the update
     } finally {
       setSaving(false);
     }
@@ -64,11 +65,7 @@ export default function SettingsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, baseCurrency: e.target.value as Currency })
                 }
-                options={[
-                  { value: 'Q', label: 'Q (Quetzal)' },
-                  { value: 'USD', label: 'USD' },
-                  { value: 'EUR', label: 'EUR' },
-                ]}
+                options={CURRENCY_OPTIONS}
               />
 
               <div className="border-t border-zinc-800 pt-4 mt-4">

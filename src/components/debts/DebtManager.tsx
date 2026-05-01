@@ -7,6 +7,7 @@ import { Card, Button, Modal } from '@/components/ui';
 import { DebtForm } from '@/components/forms';
 import { useDebts, useUserSettings } from '@/hooks/useFirestore';
 import { useAuth } from '@/hooks/useAuth';
+import { CURRENCY_OPTIONS } from '@/lib/constants';
 import {
   addDebt,
   updateDebt,

@@ -181,9 +181,12 @@ export async function getMonthlySnapshots(userId: string): Promise<MonthlySnapsh
 
 export async function addMonthlySnapshot(
   userId: string,
-  data: Omit<MonthlySnapshot, 'id' | 'userId'>
+  data: Omit<MonthlySnapshot, 'id' | 'userId' | 'createdAt'>
 ): Promise<string> {
-  return addToCollection('monthlySnapshots', userId, data);
+  return addToCollection('monthlySnapshots', userId, {
+    ...data,
+    createdAt: Timestamp.now(),
+  });
 }
 
 export async function deleteMonthlySnapshot(id: string): Promise<void> {

@@ -16,33 +16,29 @@ import type { RecurringExpense, RecurringExpenseFormData } from '@/types';
 
 export default function RecurringPage() {
   const { user } = useAuth();
-  const { recurringExpenses, loading, refresh } = useRecurringExpenses();
+  const { recurringExpenses, loading } = useRecurringExpenses();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<RecurringExpense | null>(null);
 
   const handleAdd = async (data: RecurringExpenseFormData) => {
     if (!user) return;
     await addRecurringExpense(user.uid, data);
-    await refresh();
     setIsModalOpen(false);
   };
 
   const handleEdit = async (data: RecurringExpenseFormData) => {
     if (!editingExpense) return;
     await updateRecurringExpense(editingExpense.id, data);
-    await refresh();
     setEditingExpense(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this recurring expense?')) return;
     await deleteRecurringExpense(id);
-    await refresh();
   };
 
   const handleToggleActive = async (expense: RecurringExpense) => {
     await updateRecurringExpense(expense.id, { isActive: !expense.isActive });
-    await refresh();
   };
 
   return (

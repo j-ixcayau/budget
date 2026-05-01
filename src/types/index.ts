@@ -33,6 +33,7 @@ export interface MonthlySnapshot {
   id: string;
   userId: string;
   month: string; // YYYY-MM
+  createdAt?: Timestamp; // added for multi-snapshot ordering
   totalAssets: number;
   totalLiabilities: number;
   netWorth: number;

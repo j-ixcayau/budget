@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button, Input, Select } from '@/components/ui';
 import { POPULAR_COINS } from '@/lib/crypto';
+import { CURRENCY_OPTIONS } from '@/lib/constants';
 import type { Asset, AssetFormData, Currency, AssetType } from '@/types';
 
 interface AssetFormProps {
@@ -213,11 +214,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
             onChange={(e) =>
               setFormData({ ...formData, investedCurrency: e.target.value as Currency })
             }
-            options={[
-              { value: 'Q', label: 'Q (Quetzal)' },
-              { value: 'USD', label: 'USD' },
-              { value: 'EUR', label: 'EUR' },
-            ]}
+            options={CURRENCY_OPTIONS}
           />
         </>
       ) : (
@@ -241,11 +238,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
             label="Currency"
             value={formData.currency}
             onChange={(e) => setFormData({ ...formData, currency: e.target.value as Currency })}
-            options={[
-              { value: 'Q', label: 'Q (Quetzal)' },
-              { value: 'USD', label: 'USD' },
-              { value: 'EUR', label: 'EUR' },
-            ]}
+            options={CURRENCY_OPTIONS}
           />
         </>
       )}

@@ -29,7 +29,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { transactions, refresh: refreshTransactions } = useTransactions();
+  const { transactions } = useTransactions();
   const { assets } = useAssets();
   const { debts: liabilities } = useDebts('i_owe');
   const { snapshots } = useMonthlySnapshots();
@@ -80,7 +80,6 @@ export default function DashboardPage() {
   const handleLogBill = async (data: TransactionFormData) => {
     if (!user) return;
     await addTransaction(user.uid, data);
-    await refreshTransactions();
     setLogExpense(null);
   };
 

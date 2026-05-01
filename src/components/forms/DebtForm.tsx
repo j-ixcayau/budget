@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Timestamp, deleteField } from 'firebase/firestore';
 import { Button, Input, Select } from '@/components/ui';
+import { CURRENCY_OPTIONS } from '@/lib/constants';
 import type { Debt, DebtFormData, Currency, DebtType } from '@/types';
 
 interface DebtFormProps {
@@ -83,11 +84,7 @@ export function DebtForm({ debtType, initialData, onSubmit, onCancel }: DebtForm
         label="Currency"
         value={formData.currency}
         onChange={(e) => setFormData({ ...formData, currency: e.target.value as Currency })}
-        options={[
-          { value: 'Q', label: 'Q (Quetzal)' },
-          { value: 'USD', label: 'USD' },
-          { value: 'EUR', label: 'EUR' },
-        ]}
+        options={CURRENCY_OPTIONS}
       />
       <Input
         label={isOwedToMe ? 'Date Lent' : 'Date Borrowed'}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Asset } from '@/types';
 import { fetchCryptoPrices, type CryptoPrices } from '@/lib/crypto';
 
@@ -9,9 +9,12 @@ export function useCryptoPrices(assets: Asset[]) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const coinIds = assets.filter((a) => a.type === 'crypto' && a.coinId).map((a) => a.coinId!);
+  const coinIds = useMemo(
+    () => assets.filter((a) => a.type === 'crypto' && a.coinId).map((a) => a.coinId!),
+    [assets]
+  );
 
-  const coinIdsKey = [...new Set(coinIds)].sort().join(',');
+  const coinIdsKey = useMemo(() => [...new Set(coinIds)].sort().join(','), [coinIds]);
 
   const refresh = useCallback(async () => {
     if (!coinIdsKey) {

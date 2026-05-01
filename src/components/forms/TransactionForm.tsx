@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { Button, Input, Select } from '@/components/ui';
+import { CURRENCY_OPTIONS, TRANSACTION_CATEGORIES } from '@/lib/constants';
 import type { Transaction, TransactionFormData, Currency, TransactionType } from '@/types';
 
 interface TransactionFormProps {
@@ -10,20 +11,6 @@ interface TransactionFormProps {
   onSubmit: (data: TransactionFormData) => Promise<void>;
   onCancel: () => void;
 }
-
-const CATEGORIES = [
-  'Food',
-  'Transport',
-  'Housing',
-  'Utilities',
-  'Entertainment',
-  'Health',
-  'Shopping',
-  'Salary',
-  'Freelance',
-  'Investment',
-  'Other',
-];
 
 export function TransactionForm({ initialData, onSubmit, onCancel }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
@@ -92,17 +79,13 @@ export function TransactionForm({ initialData, onSubmit, onCancel }: Transaction
         label="Category"
         value={formData.category}
         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-        options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+        options={TRANSACTION_CATEGORIES.map((c) => ({ value: c, label: c }))}
       />
       <Select
         label="Currency"
         value={formData.currency}
         onChange={(e) => setFormData({ ...formData, currency: e.target.value as Currency })}
-        options={[
-          { value: 'Q', label: 'Q (Quetzal)' },
-          { value: 'USD', label: 'USD' },
-          { value: 'EUR', label: 'EUR' },
-        ]}
+        options={CURRENCY_OPTIONS}
       />
       <Input
         label="Note (optional)"

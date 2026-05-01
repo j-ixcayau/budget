@@ -13,14 +13,18 @@ interface NetWorthChartProps {
 export function NetWorthChart({ snapshots, settings }: NetWorthChartProps) {
   const baseCurrency = settings?.baseCurrency ?? 'Q';
 
-  // Sort by month ascending for the chart
+  // Snapshots come in sorted by createdAt desc — deduplicate by month keeping
+  // the latest snapshot per month, then sort ascending for the chart X axis.
   const data = useMemo(() => {
-    return [...snapshots]
+    const latestPerMonth = new Map<string, MonthlySnapshot>();
+    for (const s of snapshots) {
+      if (!latestPerMonth.has(s.month)) {
+        latestPerMonth.set(s.month, s);
+      }
+    }
+    return [...latestPerMonth.values()]
       .sort((a, b) => a.month.localeCompare(b.month))
-      .map((s) => ({
-        month: s.month,
-        netWorth: s.netWorth,
-      }));
+      .map((s) => ({ month: s.month, netWorth: s.netWorth }));
   }, [snapshots]);
 
   if (data.length === 0) {
