@@ -29,11 +29,25 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
     }
 
     const data = request.body;
-    const { userId, amount, merchant, date, currency, category, note } = data;
+    const { userId, merchant, date, currency, category, note } = data;
 
-    if (!userId || amount === undefined || amount === null || !currency) {
-      logger.warn('Missing required fields', { userId, amount, currency });
+    // Coerce amount early so string "0", "", or missing all fail the same way
+    const amount = parseFloat(data.amount);
+
+    if (!userId || !currency) {
+      logger.warn('Missing required fields', { userId, amount: data.amount, currency });
       response.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      logger.warn('Invalid or zero amount received — transaction rejected', {
+        rawAmount: data.amount,
+        parsedAmount: amount,
+        userId,
+        merchant,
+      });
+      response.status(400).json({ error: 'Invalid amount: must be a positive number' });
       return;
     }
 
@@ -53,7 +67,7 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
 
     const transactionData = {
       userId,
-      amount: parseFloat(amount),
+      amount,
       currency: currency || 'Q',
       category: category || 'Other',
       type: 'expense',
