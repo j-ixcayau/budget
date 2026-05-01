@@ -8,6 +8,7 @@ import {
   orderBy,
   onSnapshot,
   doc,
+  Timestamp,
   QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -74,13 +75,62 @@ function useRealtimeCollection<T>(
   return { data, loading, error, refresh };
 }
 
-export function useTransactions() {
-  const { data: transactions, ...rest } = useRealtimeCollection<Transaction>(
-    'transactions',
-    'date',
-    'desc'
-  );
-  return { transactions, ...rest };
+/**
+ * Fetches transactions for the current user.
+ * When `monthFilter` is provided ("YYYY-MM"), only that month's documents
+ * are requested from Firestore — avoiding a full-collection scan.
+ */
+export function useTransactions(monthFilter?: string) {
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const constraints: QueryConstraint[] = [where('userId', '==', user.uid)];
+
+    if (monthFilter && /^\d{4}-\d{2}$/.test(monthFilter)) {
+      const [year, month] = monthFilter.split('-').map(Number);
+      // Start of the selected month (local midnight → UTC Timestamp)
+      const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      // Start of the next month — used as exclusive upper bound
+      const end = new Date(year, month, 1, 0, 0, 0, 0);
+      constraints.push(where('date', '>=', Timestamp.fromDate(start)));
+      constraints.push(where('date', '<', Timestamp.fromDate(end)));
+    }
+
+    constraints.push(orderBy('date', 'desc'));
+
+    const q = query(collection(db, 'transactions'), ...constraints);
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setTransactions(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Transaction));
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Firestore hook error:', err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, monthFilter]);
+
+  const refresh = useCallback(() => Promise.resolve(), []);
+
+  return { transactions, loading, error, refresh };
 }
 
 export function useAssets() {

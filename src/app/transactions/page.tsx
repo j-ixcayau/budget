@@ -10,12 +10,34 @@ import { addTransaction, updateTransaction, deleteTransaction } from '@/lib/fire
 import { formatCurrency } from '@/lib/currency';
 import type { Transaction, TransactionFormData } from '@/types';
 
+/** Returns "YYYY-MM" for the current local month. */
+function getCurrentMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Builds a list of the last N months in "YYYY-MM" format, newest first. */
+function buildMonthOptions(count = 24): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [];
+  const now = new Date();
+
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+    options.push({ value, label });
+  }
+  return options;
+}
+
+const MONTH_OPTIONS = buildMonthOptions();
+
 export default function TransactionsPage() {
   const { user } = useAuth();
-  const { transactions, loading } = useTransactions();
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const { transactions, loading } = useTransactions(selectedMonth);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState('all');
 
   const handleAdd = async (data: TransactionFormData) => {
     if (!user) return;
@@ -34,25 +56,11 @@ export default function TransactionsPage() {
     await deleteTransaction(id);
   };
 
-  // Build list of unique months from transactions
-  const monthOptions = useMemo(() => {
-    const months = new Set<string>();
-    transactions.forEach((t) => {
-      const d = t.date.toDate();
-      const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      months.add(m);
-    });
-    return Array.from(months).sort((a, b) => b.localeCompare(a));
-  }, [transactions]);
-
-  const filtered = useMemo(() => {
-    if (selectedMonth === 'all') return transactions;
-    return transactions.filter((t) => {
-      const d = t.date.toDate();
-      const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return m === selectedMonth;
-    });
-  }, [transactions, selectedMonth]);
+  // Friendly label for the currently selected month
+  const selectedLabel = useMemo(
+    () => MONTH_OPTIONS.find((o) => o.value === selectedMonth)?.label ?? selectedMonth,
+    [selectedMonth]
+  );
 
   return (
     <AuthGuard>
@@ -60,17 +68,12 @@ export default function TransactionsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold text-zinc-100">Transactions</h1>
           <div className="flex items-center gap-3">
-            {monthOptions.length > 0 && (
-              <Select
-                label=""
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All months' },
-                  ...monthOptions.map((m) => ({ value: m, label: m })),
-                ]}
-              />
-            )}
+            <Select
+              label=""
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              options={MONTH_OPTIONS}
+            />
             <Button onClick={() => setIsModalOpen(true)}>Add Transaction</Button>
           </div>
         </div>
@@ -82,7 +85,7 @@ export default function TransactionsPage() {
                 <div key={i} className="h-10 bg-zinc-800/60 rounded animate-pulse" />
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : transactions.length === 0 ? (
             <div className="py-12 flex flex-col items-center gap-4 text-center">
               <svg
                 className="w-12 h-12 text-zinc-700"
@@ -98,16 +101,12 @@ export default function TransactionsPage() {
                 />
               </svg>
               <div>
-                <p className="text-zinc-300 font-medium">No transactions yet</p>
+                <p className="text-zinc-300 font-medium">No transactions</p>
                 <p className="text-zinc-500 text-sm mt-1">
-                  {selectedMonth !== 'all'
-                    ? 'No transactions for this month.'
-                    : 'Add your first transaction to get started.'}
+                  No transactions found for {selectedLabel}.
                 </p>
               </div>
-              {selectedMonth === 'all' && (
-                <Button onClick={() => setIsModalOpen(true)}>Add Transaction</Button>
-              )}
+              <Button onClick={() => setIsModalOpen(true)}>Add Transaction</Button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -123,7 +122,7 @@ export default function TransactionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((t) => (
+                  {transactions.map((t) => (
                     <tr key={t.id} className="border-b border-zinc-800/50">
                       <td className="py-3 text-zinc-300 text-sm">
                         {t.date.toDate().toLocaleDateString()}
