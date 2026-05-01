@@ -6,6 +6,54 @@ import * as logger from 'firebase-functions/logger';
 admin.initializeApp();
 const db = admin.firestore();
 
+/**
+ * Parses a currency-formatted string into a plain float.
+ * Handles formats sent by the iOS Wallet tap trigger, e.g.:
+ *   "Q 25.00"  →  25
+ *   "$1,234.50" → 1234.5
+ *   "GTQ100"    → 100
+ *   "25,00"     → 25   (European comma-decimal)
+ *   25          → 25   (already a number)
+ */
+function parseFormattedAmount(raw: unknown): number {
+  if (typeof raw === 'number') return raw;
+  if (raw === null || raw === undefined) return NaN;
+
+  // Convert to string and strip currency symbols, letters, and whitespace
+  let str = String(raw).trim();
+
+  // Remove currency codes (3-letter like GTQ, USD, EUR) and symbols (Q, $, €, £)
+  str = str
+    .replace(/[A-Z]{3}/g, '')
+    .replace(/[Q$€£¥₩]/g, '')
+    .trim();
+
+  // Determine decimal format:
+  // If the string has both comma and period, the last one is the decimal separator
+  // If only a comma exists and it's followed by exactly 2 digits at the end → European decimal
+  const hasComma = str.includes(',');
+  const hasPeriod = str.includes('.');
+
+  if (hasComma && hasPeriod) {
+    // e.g. "1,234.50" → remove commas; "1.234,50" → remove periods, replace comma
+    if (str.lastIndexOf('.') > str.lastIndexOf(',')) {
+      str = str.replace(/,/g, ''); // "1,234.50" → "1234.50"
+    } else {
+      str = str.replace(/\./g, '').replace(',', '.'); // "1.234,50" → "1234.50"
+    }
+  } else if (hasComma && !hasPeriod) {
+    // e.g. "25,00" (European) or "1,234" (thousand separator)
+    const parts = str.split(',');
+    if (parts.length === 2 && parts[1].length === 2) {
+      str = str.replace(',', '.'); // "25,00" → "25.00"
+    } else {
+      str = str.replace(/,/g, ''); // "1,234" → "1234"
+    }
+  }
+
+  return parseFloat(str);
+}
+
 export const logApplePayTransaction = onRequest(async (request, response) => {
   logger.info('Incoming transaction request', {
     method: request.method,
@@ -31,11 +79,12 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
     const data = request.body;
     const { userId, merchant, date, currency, category, note } = data;
 
-    // Coerce amount early so string "0", "", or missing all fail the same way
-    const amount = parseFloat(data.amount);
+    // Parse amount from any format the iOS tap trigger may send:
+    // e.g. "Q 25.00", "$1,234.50", "GTQ100", "25,00" (European), or plain 25
+    const amount = parseFormattedAmount(data.amount);
 
     if (!userId || !currency) {
-      logger.warn('Missing required fields', { userId, amount: data.amount, currency });
+      logger.warn('Missing required fields', { userId, rawAmount: data.amount, currency });
       response.status(400).json({ error: 'Missing required fields' });
       return;
     }
