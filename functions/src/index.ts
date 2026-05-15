@@ -199,39 +199,75 @@ export const checkRecurringExpenses = onSchedule(
           (doc) => ({ id: doc.id, ...doc.data() }) as any
         );
 
-        // Get this month's transactions
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Get transactions from 45 days ago to cover previous month's late bills
+        const fortyFiveDaysAgo = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
         const transactionsSnapshot = await db
           .collection('transactions')
           .where('userId', '==', userId)
-          .where('date', '>=', firstDayOfMonth)
+          .where('date', '>=', fortyFiveDaysAgo)
           .get();
 
-        const monthTransactions = transactionsSnapshot.docs.map((doc) => {
+        const recentTransactions = transactionsSnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             ...data,
             id: doc.id,
-            date: data.date,
+            date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
           } as any;
         });
 
-        // Filter pending bills
-        const pendingBills = recurringExpenses.filter((expense: any) => {
+        const upcomingBills = [];
+
+        for (const expense of recurringExpenses) {
+          let intendedYear = now.getFullYear();
+          let intendedMonth = now.getMonth();
+
+          let activeBillingDate = new Date(intendedYear, intendedMonth, expense.dayOfMonth);
+          const threeDaysFromNow = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + 3,
+            23,
+            59,
+            59
+          );
+
+          // If the due date for this month is > 3 days away, we are still tracking the previous month's bill
+          if (activeBillingDate > threeDaysFromNow) {
+            intendedMonth -= 1;
+            if (intendedMonth < 0) {
+              intendedMonth = 11;
+              intendedYear -= 1;
+            }
+            activeBillingDate = new Date(intendedYear, intendedMonth, expense.dayOfMonth);
+          }
+
           const nameLower = expense.name.toLowerCase();
-          const isLogged = monthTransactions.some((tx: any) => {
-            if (tx.note?.toLowerCase().includes(nameLower)) return true;
-            if (tx.category === expense.category && expense.isFixed) {
-              return Math.abs(tx.amount - expense.defaultAmount) < 0.01;
+          const isLogged = recentTransactions.some((tx: any) => {
+            const txDate = tx.date;
+            if (!txDate) return false;
+
+            // Allow payment anytime in the intended billing month
+            const isSameMonth =
+              txDate.getMonth() === intendedMonth && txDate.getFullYear() === intendedYear;
+
+            // Also allow payment within [-10, +10] days of the active due date
+            const diffDays = (txDate.getTime() - activeBillingDate.getTime()) / (1000 * 3600 * 24);
+            const isNearDueDate = diffDays >= -10 && diffDays <= 10;
+
+            if (isSameMonth || isNearDueDate) {
+              if (tx.note?.toLowerCase().includes(nameLower)) return true;
+              if (tx.category === expense.category && expense.isFixed) {
+                return Math.abs(tx.amount - expense.defaultAmount) < 0.01;
+              }
             }
             return false;
           });
-          return !isLogged;
-        });
 
-        // Find bills due in the next 3 days (or already due this month)
-        const todayDay = now.getDate();
-        const upcomingBills = pendingBills.filter((bill: any) => bill.dayOfMonth <= todayDay + 3);
+          if (!isLogged) {
+            upcomingBills.push(expense);
+          }
+        }
 
         if (upcomingBills.length > 0) {
           await sendTelegramNotification(botToken, userChatId, upcomingBills, appUrl);

@@ -59,7 +59,7 @@ export default function DashboardPage() {
       .reduce((sum, t) => sum + convertToBaseCurrency(t.amount, t.currency, settings), 0);
 
     // Calculate pending bills using shared utility
-    const pendingBills = getPendingBills(recurringExpenses, monthTransactions);
+    const pendingBills = getPendingBills(recurringExpenses, transactions);
 
     const totalDebtsOwed = owedDebts
       .filter((d) => d.status === 'active')
