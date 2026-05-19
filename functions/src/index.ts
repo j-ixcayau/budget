@@ -54,7 +54,7 @@ function parseFormattedAmount(raw: unknown): number {
   return parseFloat(str);
 }
 
-export const logApplePayTransaction = onRequest(async (request, response) => {
+export const logShortcutTransaction = onRequest(async (request, response) => {
   logger.info('Incoming transaction request', {
     method: request.method,
     headers: request.headers,
@@ -121,7 +121,7 @@ export const logApplePayTransaction = onRequest(async (request, response) => {
       category: category || 'Other',
       type: 'expense',
       date: transactionDate,
-      note: note || `Apple Pay: ${merchant || 'Unknown Merchant'}`,
+      note: note || `Shortcut: ${merchant || 'Manual Entry'}`,
     };
 
     logger.info('Attempting to save transaction to Firestore', { transactionData });
