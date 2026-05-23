@@ -40,20 +40,31 @@ export function DebtForm({ debtType, initialData, onSubmit, onCancel }: DebtForm
     setError('');
     setLoading(true);
     try {
-      const payload = {
+      const payload: any = {
         name: formData.name.trim(),
         amount: parseFloat(formData.amount),
         currency: formData.currency,
         debtType,
         date: Timestamp.fromDate(new Date(formData.date + 'T00:00:00')),
-        dueDate: formData.dueDate
-          ? Timestamp.fromDate(new Date(formData.dueDate + 'T00:00:00'))
-          : deleteField(),
-        monthlyPayment: formData.monthlyPayment
-          ? parseFloat(formData.monthlyPayment)
-          : deleteField(),
-        note: formData.note.trim() || deleteField(),
-      } as unknown as DebtFormData;
+      };
+
+      if (formData.dueDate) {
+        payload.dueDate = Timestamp.fromDate(new Date(formData.dueDate + 'T00:00:00'));
+      } else if (initialData) {
+        payload.dueDate = deleteField();
+      }
+
+      if (formData.monthlyPayment) {
+        payload.monthlyPayment = parseFloat(formData.monthlyPayment);
+      } else if (initialData) {
+        payload.monthlyPayment = deleteField();
+      }
+
+      if (formData.note.trim()) {
+        payload.note = formData.note.trim();
+      } else if (initialData) {
+        payload.note = deleteField();
+      }
       await onSubmit(payload);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save. Please try again.');

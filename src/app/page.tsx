@@ -37,7 +37,7 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-zinc-400">Loading...</div>
+        <div className="text-white/60">Loading...</div>
       </div>
     );
   }
@@ -50,8 +50,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-zinc-100">Budget</h1>
-          <p className="text-zinc-400 mt-1">Personal Finance Dashboard</p>
+          <h1 className="text-2xl font-bold text-foreground font-fira-code">Budget</h1>
+          <p className="text-white/60 mt-1">Personal Finance Dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -86,7 +86,7 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
 
         {!hasCurrentMonthSnapshot && (
           <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -130,41 +130,41 @@ export default function DashboardPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card>
-            <div className="text-sm text-zinc-400">Total Assets</div>
-            <div className="text-2xl font-bold text-green-400">
+            <div className="text-sm text-white/60">Total Assets</div>
+            <div className="text-2xl font-bold text-emerald-400 font-fira-code">
               {stats ? formatCurrency(stats.totalAssets, settings?.baseCurrency) : '—'}
             </div>
           </Card>
           <Card>
-            <div className="text-sm text-zinc-400">Total Liabilities</div>
-            <div className="text-2xl font-bold text-red-400">
+            <div className="text-sm text-white/60">Total Liabilities</div>
+            <div className="text-2xl font-bold text-red-500 font-fira-code">
               {stats ? formatCurrency(stats.totalLiabilities, settings?.baseCurrency) : '—'}
             </div>
           </Card>
           <Card>
-            <div className="text-sm text-zinc-400">Net Worth</div>
+            <div className="text-sm text-white/60">Net Worth</div>
             <div
-              className={`text-2xl font-bold ${stats && stats.netWorth >= 0 ? 'text-blue-400' : 'text-red-400'}`}
+              className={`text-2xl font-bold font-fira-code ${stats && stats.netWorth >= 0 ? 'text-blue-400' : 'text-red-500'}`}
             >
               {stats ? formatCurrency(stats.netWorth, settings?.baseCurrency) : '—'}
             </div>
           </Card>
           <Card>
-            <div className="text-sm text-zinc-400">This Month Income</div>
-            <div className="text-2xl font-bold text-green-400">
+            <div className="text-sm text-white/60">This Month Income</div>
+            <div className="text-2xl font-bold text-emerald-400 font-fira-code">
               {stats ? formatCurrency(stats.monthIncome, settings?.baseCurrency) : '—'}
             </div>
           </Card>
           <Card>
-            <div className="text-sm text-zinc-400">This Month Expenses</div>
-            <div className="text-2xl font-bold text-red-400">
+            <div className="text-sm text-white/60">This Month Expenses</div>
+            <div className="text-2xl font-bold text-red-500 font-fira-code">
               {stats ? formatCurrency(stats.monthExpenses, settings?.baseCurrency) : '—'}
             </div>
           </Card>
           <Card>
-            <div className="text-sm text-zinc-400">This Month Balance</div>
+            <div className="text-sm text-white/60">This Month Balance</div>
             <div
-              className={`text-2xl font-bold ${stats && stats.monthIncome - stats.monthExpenses >= 0 ? 'text-green-400' : 'text-red-400'}`}
+              className={`text-2xl font-bold font-fira-code ${stats && stats.monthIncome - stats.monthExpenses >= 0 ? 'text-emerald-400' : 'text-red-500'}`}
             >
               {stats
                 ? formatCurrency(stats.monthIncome - stats.monthExpenses, settings?.baseCurrency)
@@ -172,13 +172,13 @@ export default function DashboardPage() {
             </div>
           </Card>
           <Card>
-            <div className="text-sm text-zinc-400">Outstanding Debts Owed Me</div>
-            <div className="text-2xl font-bold text-emerald-400">
+            <div className="text-sm text-white/60">Outstanding Debts Owed Me</div>
+            <div className="text-2xl font-bold text-emerald-400 font-fira-code">
               {stats ? formatCurrency(stats.totalDebtsOwed, settings?.baseCurrency) : '—'}
             </div>
             <Link
               href="/debts"
-              className="text-xs text-zinc-500 hover:text-zinc-300 mt-1 inline-block transition-colors"
+              className="text-xs text-white/40 hover:text-white/80 mt-1 inline-block transition-colors"
             >
               View debts →
             </Link>

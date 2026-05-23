@@ -1,33 +1,43 @@
 @import 'tailwindcss';
 
-:root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --accent: #6366f1; /* Indigo */
-  --accent-foreground: #ffffff;
-  --card: #18181b;
-  --card-foreground: #f4f4f5;
-  --border: #27272a;
+@theme {
+  --color-background: #0f172a;
+  --color-foreground: #ffffff;
+  --color-primary: #1e40af;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #3b82f6;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #059669;
+  --color-accent-foreground: #ffffff;
+  --color-card: #101a34;
+  --color-card-foreground: #ffffff;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-ring: #1e40af;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
+  --font-fira-sans: var(--font-fira-sans), system-ui, sans-serif;
+  --font-fira-code: var(--font-fira-code), monospace;
 }
 
 @layer utilities {
   .glass {
-    @apply bg-zinc-900/40 backdrop-blur-md border border-zinc-100/10 shadow-xl;
+    @apply bg-[rgba(16,26,52,0.4)] backdrop-blur-md border border-[rgba(255,255,255,0.08)] shadow-xl;
   }
 
   .glass-card {
-    @apply bg-zinc-900/20 backdrop-blur-lg border border-white/5 shadow-2xl;
+    @apply bg-[rgba(16,26,52,0.2)] backdrop-blur-lg border border-[rgba(255,255,255,0.05)] shadow-2xl;
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-emerald-400;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter, system-ui, sans-serif);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-fira-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -43,7 +53,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors;
+  @apply bg-[#101A34] rounded-full hover:bg-[#1E40AF] transition-colors;
 }
 
 /* Smooth scrolling */
@@ -53,7 +63,7 @@ html {
 
 /* Focus ring */
 :focus-visible {
-  @apply outline-none ring-2 ring-indigo-500 ring-offset-2 ring-offset-zinc-950;
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
 }
 
 /* Transitions */
