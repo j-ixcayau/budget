@@ -17,7 +17,7 @@ function getCurrentMonth(): string {
 }
 
 /** Builds a list of the last N months in "YYYY-MM" format, newest first. */
-function buildMonthOptions(count = 24): { value: string; label: string }[] {
+function buildMonthOptions(count = 6): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
   const now = new Date();
 
@@ -56,17 +56,67 @@ export default function TransactionsPage() {
     await deleteTransaction(id);
   };
 
+  const handleExportCSV = () => {
+    if (!transactions.length) return;
+
+    const headers = ['Date', 'Type', 'Category', 'Amount', 'Currency', 'Note'];
+    const rows = transactions.map((t) => [
+      t.date.toDate().toLocaleDateString(),
+      t.type,
+      t.category,
+      t.amount.toString(),
+      t.currency,
+      t.note || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `transactions-${selectedMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Friendly label for the currently selected month
   const selectedLabel = useMemo(
     () => MONTH_OPTIONS.find((o) => o.value === selectedMonth)?.label ?? selectedMonth,
     [selectedMonth]
   );
 
+  const expensesSummary = useMemo(() => {
+    const totals: Record<string, number> = {};
+    transactions.forEach((t) => {
+      if (t.type === 'expense') {
+        totals[t.currency] = (totals[t.currency] || 0) + t.amount;
+      }
+    });
+    return Object.entries(totals)
+      .map(([curr, amt]) => formatCurrency(amt, curr as any))
+      .join(' | ');
+  }, [transactions]);
+
   return (
     <AuthGuard>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-zinc-100">Transactions</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-100">Transactions</h1>
+            {!loading && (
+              <p className="text-sm text-zinc-400 mt-1">
+                Total Expenses:{' '}
+                <span className="font-medium text-red-400">
+                  {expensesSummary || formatCurrency(0)}
+                </span>
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <Select
               label=""
@@ -74,6 +124,13 @@ export default function TransactionsPage() {
               onChange={(e) => setSelectedMonth(e.target.value)}
               options={MONTH_OPTIONS}
             />
+            <Button
+              variant="secondary"
+              onClick={handleExportCSV}
+              disabled={transactions.length === 0}
+            >
+              Export CSV
+            </Button>
             <Button onClick={() => setIsModalOpen(true)}>Add Transaction</Button>
           </div>
         </div>
