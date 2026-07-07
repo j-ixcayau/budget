@@ -1,116 +1,194 @@
-import { RecurringExpense, Transaction, Currency, UserSettings } from '@/types';
-import { convertToBaseCurrency } from './currency';
+import { RecurringExpense, Transaction } from '@/types';
 
-function getClosestDueDate(txDate: Date, expense: RecurringExpense): Date {
-  const year = txDate.getFullYear();
-  const month = txDate.getMonth();
+/**
+ * ============================================================================
+ *  UNIFIED RECURRING-EXPENSE / MISSING-PAYMENT LOGIC
+ * ============================================================================
+ *
+ * This file is the SINGLE SOURCE OF TRUTH for deciding whether a recurring
+ * bill has been paid for a given billing cycle.
+ *
+ * IMPORTANT: An identical copy lives in `functions/src/recurring.ts` (used by
+ * the Telegram Cloud Function). The Cloud Functions build is a separate
+ * package and cannot import from the Next.js `src/` tree, so the two files are
+ * kept byte-for-byte identical below the type imports. If you change the core
+ * functions here, mirror the change there.
+ *
+ * Tunable behaviour (shared by web + Telegram):
+ *   OVERDUE_GRACE_DAYS  – how long after a due date we keep flagging LAST
+ *                         month's cycle as overdue.
+ *   DUE_SOON_DAYS       – lookahead window used for "due soon" notifications.
+ */
 
-  const d1 = new Date(year, month - 1, expense.dayOfMonth);
-  const d2 = new Date(year, month, expense.dayOfMonth);
-  const d3 = new Date(year, month + 1, expense.dayOfMonth);
+const DAY_MS = 1000 * 60 * 60 * 24;
+export const OVERDUE_GRACE_DAYS = 10;
+export const DUE_SOON_DAYS = 3;
+// How many days BEFORE the due date a payment may be made and still count for
+// that cycle (people often pay a few days early). Defines the billing period.
+export const EARLY_PAYMENT_DAYS = 7;
 
-  const diff1 = Math.abs(txDate.getTime() - d1.getTime());
-  const diff2 = Math.abs(txDate.getTime() - d2.getTime());
-  const diff3 = Math.abs(txDate.getTime() - d3.getTime());
-
-  if (diff1 < diff2 && diff1 < diff3) return d1;
-  if (diff3 < diff2 && diff3 < diff1) return d3;
-  return d2;
+/** Does this transaction correspond to this bill at all? */
+function txMatchesBill(tx: Transaction, expense: RecurringExpense): boolean {
+  const nameLower = expense.name.toLowerCase();
+  if (tx.note?.toLowerCase().includes(nameLower)) return true;
+  if (tx.category === expense.category && expense.isFixed) {
+    return Math.abs(tx.amount - expense.defaultAmount) < 0.01;
+  }
+  return false;
 }
 
 /**
- * Check if a recurring expense has been logged for a specific target date.
- * Finds the closest due date for each matching transaction to avoid double counting.
+ * Check if a recurring expense has been logged for a specific target cycle.
+ *
+ * A payment counts for the cycle whose due date is `targetDate` when it falls
+ * inside that cycle's BILLING PERIOD:
+ *     [ targetDue - EARLY_PAYMENT_DAYS,  nextDue - EARLY_PAYMENT_DAYS )
+ * These periods are contiguous and non-overlapping, so every payment is
+ * attributed to exactly one cycle no matter how early or late it was paid.
+ * (This replaces an older "nearest due date" heuristic that misattributed
+ * payments made far from the due day.)
  */
 export function isBillPaidForDate(
   expense: RecurringExpense,
   targetDate: Date,
   transactions: Transaction[]
 ): boolean {
-  const nameLower = expense.name.toLowerCase();
+  const periodStart = new Date(targetDate);
+  periodStart.setDate(periodStart.getDate() - EARLY_PAYMENT_DAYS);
+
+  const nextDue = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, expense.dayOfMonth);
+  const periodEnd = new Date(nextDue);
+  periodEnd.setDate(periodEnd.getDate() - EARLY_PAYMENT_DAYS);
 
   return transactions.some((tx) => {
-    const txDate = tx.date?.toDate ? tx.date.toDate() : new Date(tx.date as any);
+    const txDate = tx.date?.toDate ? tx.date.toDate() : new Date(tx.date as unknown as string);
     if (isNaN(txDate.getTime())) return false;
-
-    // Check if this transaction matches the bill at all
-    let matches = false;
-    if (tx.note?.toLowerCase().includes(nameLower)) {
-      matches = true;
-    } else if (tx.category === expense.category && expense.isFixed) {
-      if (Math.abs(tx.amount - expense.defaultAmount) < 0.01) {
-        matches = true;
-      }
-    }
-
-    if (!matches) return false;
-
-    // It matches the bill. Is it FOR this targetDate?
-    const closestDueDate = getClosestDueDate(txDate, expense);
-
-    return (
-      closestDueDate.getFullYear() === targetDate.getFullYear() &&
-      closestDueDate.getMonth() === targetDate.getMonth()
-    );
+    if (!txMatchesBill(tx, expense)) return false;
+    return txDate >= periodStart && txDate < periodEnd;
   });
 }
 
+export interface BillStatus {
+  expense: RecurringExpense;
+  dueDate: Date;
+  /** days until this month's due date; negative = past due */
+  daysUntilDue: number;
+  /** paid for the current calendar month's cycle */
+  currentCyclePaid: boolean;
+  /** paid for last month's cycle (true if outside the grace window) */
+  prevCyclePaid: boolean;
+  /** current cycle unpaid AND already past its due date */
+  isOverdue: boolean;
+  /** last month's cycle unpaid AND still inside the grace window */
+  isPrevOverdue: boolean;
+  /** unpaid AND due within DUE_SOON_DAYS (this month or next month) */
+  isDueSoon: boolean;
+}
+
 /**
- * Filter pending recurring expenses.
- * Shows bills unpaid for the current month, and recently overdue bills from last month.
+ * Compute the full payment status of a bill relative to `now`. This is the
+ * shared primitive both the web dashboard and the Telegram notifier build on,
+ * so both surfaces agree on what "missing" means.
+ */
+export function getBillStatus(
+  expense: RecurringExpense,
+  transactions: Transaction[],
+  now: Date = new Date()
+): BillStatus {
+  const dueDate = new Date(now.getFullYear(), now.getMonth(), expense.dayOfMonth);
+  const daysUntilDue = (dueDate.getTime() - now.getTime()) / DAY_MS;
+  const currentCyclePaid = isBillPaidForDate(expense, dueDate, transactions);
+
+  // Previous month's cycle: only relevant while inside the overdue grace window.
+  const prevDueDate = new Date(now.getFullYear(), now.getMonth() - 1, expense.dayOfMonth);
+  const daysSincePrevDue = (now.getTime() - prevDueDate.getTime()) / DAY_MS;
+  const prevInGrace = daysSincePrevDue >= 0 && daysSincePrevDue <= OVERDUE_GRACE_DAYS;
+  const prevCyclePaid = prevInGrace ? isBillPaidForDate(expense, prevDueDate, transactions) : true;
+
+  // Next month's cycle: only matters if it's about to be due.
+  const nextDueDate = new Date(now.getFullYear(), now.getMonth() + 1, expense.dayOfMonth);
+  const daysToNextDue = (nextDueDate.getTime() - now.getTime()) / DAY_MS;
+  const nextDueSoon =
+    daysToNextDue >= 0 &&
+    daysToNextDue <= DUE_SOON_DAYS &&
+    !isBillPaidForDate(expense, nextDueDate, transactions);
+
+  const isOverdue = !currentCyclePaid && daysUntilDue < 0;
+  const isPrevOverdue = !prevCyclePaid;
+  const isDueSoon =
+    (!currentCyclePaid && daysUntilDue >= 0 && daysUntilDue <= DUE_SOON_DAYS) || nextDueSoon;
+
+  return {
+    expense,
+    dueDate,
+    daysUntilDue,
+    currentCyclePaid,
+    prevCyclePaid,
+    isOverdue,
+    isPrevOverdue,
+    isDueSoon,
+  };
+}
+
+/**
+ * WEB DASHBOARD view: every active bill not yet paid for the current month,
+ * plus anything still overdue from last month. This is a planning view, so it
+ * keeps showing a bill for the whole month until it is actually paid.
  */
 export function getPendingBills(
   recurringExpenses: RecurringExpense[],
-  transactions: Transaction[]
+  transactions: Transaction[],
+  now: Date = new Date()
 ): RecurringExpense[] {
-  const now = new Date();
-  const pendingBills: RecurringExpense[] = [];
-
-  for (const expense of recurringExpenses) {
-    if (!expense.isActive) continue;
-
-    const currentDueDate = new Date(now.getFullYear(), now.getMonth(), expense.dayOfMonth);
-    const isCurrentPaid = isBillPaidForDate(expense, currentDueDate, transactions);
-
-    const prevDueDate = new Date(now.getFullYear(), now.getMonth() - 1, expense.dayOfMonth);
-    const daysSincePrevDue = (now.getTime() - prevDueDate.getTime()) / (1000 * 3600 * 24);
-
-    let isPrevPaid = true;
-    // If the previous cycle was within the last 15 days, check if it's paid
-    if (daysSincePrevDue <= 15 && daysSincePrevDue >= 0) {
-      isPrevPaid = isBillPaidForDate(expense, prevDueDate, transactions);
-    }
-
-    const nextDueDate = new Date(now.getFullYear(), now.getMonth() + 1, expense.dayOfMonth);
-    const daysToNextDue = (nextDueDate.getTime() - now.getTime()) / (1000 * 3600 * 24);
-
-    let isNextPaid = true;
-    // For the next month, only show as pending if it's within 15 days
-    if (daysToNextDue <= 15 && daysToNextDue >= 0) {
-      isNextPaid = isBillPaidForDate(expense, nextDueDate, transactions);
-    }
-
-    if (!isCurrentPaid || !isPrevPaid || !isNextPaid) {
-      pendingBills.push(expense);
-    }
-  }
-
-  return pendingBills.sort((a, b) => a.dayOfMonth - b.dayOfMonth);
+  return recurringExpenses
+    .filter((e) => e.isActive)
+    .map((e) => getBillStatus(e, transactions, now))
+    .filter((s) => !s.currentCyclePaid || s.isPrevOverdue)
+    .sort((a, b) => a.expense.dayOfMonth - b.expense.dayOfMonth)
+    .map((s) => s.expense);
 }
 
 /**
- * Get bills due within the next N days.
+ * TELEGRAM notification view: only the actionable subset — overdue (this month
+ * or last month within grace) or due within the next few days. This keeps the
+ * push notifications from nagging weeks in advance while using the exact same
+ * payment detection as the web.
  */
-export function getUpcomingBills(
-  pendingBills: RecurringExpense[],
-  daysAhead: number = 3
-): RecurringExpense[] {
-  const today = new Date().getDate();
-  const limit = today + daysAhead;
+/** Display priority: overdue first, then pending, then paid. */
+function statusRank(s: BillStatus): number {
+  const paid = s.currentCyclePaid && !s.isPrevOverdue;
+  const overdue = s.isOverdue || s.isPrevOverdue;
+  if (overdue) return 0;
+  if (!paid) return 1;
+  return 2;
+}
 
-  return pendingBills.filter((bill) => {
-    // If today is late in the month, dayOfMonth might be smaller than today (next month's bill)
-    // but here we focus on bills due in the CURRENT month.
-    return bill.dayOfMonth >= today && bill.dayOfMonth <= limit;
-  });
+/**
+ * Full status of every active bill for the current month. Sorted by state
+ * (overdue → pending → paid), then by due day within each group. Used by the
+ * dashboard so it shows a complete monthly checklist with Paid / Pending /
+ * Overdue state instead of silently hiding paid bills.
+ */
+export function getMonthlyBillStatuses(
+  recurringExpenses: RecurringExpense[],
+  transactions: Transaction[],
+  now: Date = new Date()
+): BillStatus[] {
+  return recurringExpenses
+    .filter((e) => e.isActive)
+    .map((e) => getBillStatus(e, transactions, now))
+    .sort((a, b) => statusRank(a) - statusRank(b) || a.expense.dayOfMonth - b.expense.dayOfMonth);
+}
+
+export function getBillsToNotify(
+  recurringExpenses: RecurringExpense[],
+  transactions: Transaction[],
+  now: Date = new Date()
+): RecurringExpense[] {
+  return recurringExpenses
+    .filter((e) => e.isActive)
+    .map((e) => getBillStatus(e, transactions, now))
+    .filter((s) => s.isOverdue || s.isPrevOverdue || s.isDueSoon)
+    .sort((a, b) => a.expense.dayOfMonth - b.expense.dayOfMonth)
+    .map((s) => s.expense);
 }

@@ -1,4 +1,9 @@
 # Budget App - Justfile
+
+[private]
+default:
+    just --list
+    
 # Run `just --list` to see all available recipes
 
 # Format all source files with Prettier

@@ -23,7 +23,7 @@ import {
   convertToBaseCurrency,
 } from '@/lib/currency';
 import { getCurrentMonth, getMonthTransactions, addTransaction } from '@/lib/firestore';
-import { getPendingBills } from '@/lib/recurring';
+import { getMonthlyBillStatuses } from '@/lib/recurring';
 import type { RecurringExpense, TransactionFormData } from '@/types';
 import { Timestamp } from 'firebase/firestore';
 
@@ -58,8 +58,9 @@ export default function DashboardPage() {
       .filter((t) => t.type === 'expense')
       .reduce((sum, t) => sum + convertToBaseCurrency(t.amount, t.currency, settings), 0);
 
-    // Calculate pending bills using shared utility
-    const pendingBills = getPendingBills(recurringExpenses, transactions);
+    // Full status for every active bill this month (paid / pending / overdue)
+    const billStatuses = getMonthlyBillStatuses(recurringExpenses, transactions);
+    const pendingCount = billStatuses.filter((s) => !s.currentCyclePaid || s.isPrevOverdue).length;
 
     const totalDebtsOwed = owedDebts
       .filter((d) => d.status === 'active')
@@ -72,7 +73,8 @@ export default function DashboardPage() {
       monthIncome,
       monthExpenses,
       monthTransactions,
-      pendingBills,
+      billStatuses,
+      pendingCount,
       totalDebtsOwed,
     };
   }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses, owedDebts]);
@@ -186,11 +188,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Pending Bills Widget */}
+          {/* Bills This Month Widget */}
           <div className="lg:col-span-1">
-            <Card title="Pending Bills This Month">
-              <div className="space-y-4">
-                {!stats || stats.pendingBills.length === 0 ? (
+            <Card
+              title={`Bills This Month${stats && stats.pendingCount > 0 ? ` · ${stats.pendingCount} pending` : ''}`}
+            >
+              <div className="space-y-3">
+                {!stats || stats.billStatuses.length === 0 ? (
                   <div className="text-sm text-zinc-500 py-4 flex flex-col items-center gap-2">
                     <svg
                       className="w-8 h-8 opacity-20"
@@ -205,29 +209,50 @@ export default function DashboardPage() {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    All caught up!
+                    No recurring bills yet.
                   </div>
                 ) : (
-                  stats.pendingBills.map((bill) => (
-                    <div
-                      key={bill.id}
-                      className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg group"
-                    >
-                      <div>
-                        <div className="text-sm font-medium text-zinc-100">{bill.name}</div>
-                        <div className="text-xs text-zinc-500">
-                          Due day: {bill.dayOfMonth} •{' '}
-                          {formatCurrency(bill.defaultAmount, bill.currency)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setLogExpense(bill)}
-                        className="bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition-all"
+                  stats.billStatuses.map((s) => {
+                    const bill = s.expense;
+                    const paid = s.currentCyclePaid && !s.isPrevOverdue;
+                    const overdue = s.isOverdue || s.isPrevOverdue;
+                    const badge = paid
+                      ? { text: 'Paid', cls: 'bg-emerald-500/10 text-emerald-400' }
+                      : overdue
+                        ? { text: 'Overdue', cls: 'bg-red-500/10 text-red-400' }
+                        : { text: 'Pending', cls: 'bg-amber-500/10 text-amber-400' };
+                    return (
+                      <div
+                        key={bill.id}
+                        className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg group"
                       >
-                        Log
-                      </button>
-                    </div>
-                  ))
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-zinc-100 truncate">
+                              {bill.name}
+                            </span>
+                            <span
+                              className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${badge.cls}`}
+                            >
+                              {badge.text}
+                            </span>
+                          </div>
+                          <div className="text-xs text-zinc-500">
+                            Due day: {bill.dayOfMonth} •{' '}
+                            {formatCurrency(bill.defaultAmount, bill.currency)}
+                          </div>
+                        </div>
+                        {!paid && (
+                          <button
+                            onClick={() => setLogExpense(bill)}
+                            className="shrink-0 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition-all"
+                          >
+                            Log
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </Card>

@@ -2,6 +2,7 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
+import { getBillsToNotify } from './recurring.js';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -148,7 +149,7 @@ export const checkRecurringExpenses = onSchedule(
   async (event) => {
     logger.info('Starting daily recurring expense check');
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const appUrl = process.env.APP_URL || 'https://ixca-bugdet.web.app';
+    const appUrl = process.env.APP_URL || 'https://budget.ixcayau.com';
 
     if (!botToken) {
       logger.warn('TELEGRAM_BOT_TOKEN not configured, skipping notifications');
@@ -156,7 +157,6 @@ export const checkRecurringExpenses = onSchedule(
     }
 
     const now = new Date();
-    const isFirstWeekOfMonth = now.getDate() <= 7;
 
     try {
       const usersSnapshot = await db.collection('users').get();
@@ -171,19 +171,18 @@ export const checkRecurringExpenses = onSchedule(
           continue;
         }
 
-        // On the 1st-7th, check if this month's snapshot exists and remind if not
-        if (isFirstWeekOfMonth) {
-          const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-          const snapshotQuery = await db
-            .collection('monthlySnapshots')
-            .where('userId', '==', userId)
-            .where('month', '==', currentMonth)
-            .limit(1)
-            .get();
+        // Remind every day the current month's snapshot is still missing,
+        // for the whole month (not just the first week), until it's filled.
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const snapshotQuery = await db
+          .collection('monthlySnapshots')
+          .where('userId', '==', userId)
+          .where('month', '==', currentMonth)
+          .limit(1)
+          .get();
 
-          if (snapshotQuery.empty) {
-            await sendBalanceReminderNotification(botToken, userChatId, currentMonth, appUrl);
-          }
+        if (snapshotQuery.empty) {
+          await sendBalanceReminderNotification(botToken, userChatId, currentMonth, appUrl);
         }
 
         // Get active recurring expenses
@@ -216,58 +215,9 @@ export const checkRecurringExpenses = onSchedule(
           } as any;
         });
 
-        const upcomingBills = [];
-
-        for (const expense of recurringExpenses) {
-          let intendedYear = now.getFullYear();
-          let intendedMonth = now.getMonth();
-
-          let activeBillingDate = new Date(intendedYear, intendedMonth, expense.dayOfMonth);
-          const threeDaysFromNow = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() + 3,
-            23,
-            59,
-            59
-          );
-
-          // If the due date for this month is > 3 days away, we are still tracking the previous month's bill
-          if (activeBillingDate > threeDaysFromNow) {
-            intendedMonth -= 1;
-            if (intendedMonth < 0) {
-              intendedMonth = 11;
-              intendedYear -= 1;
-            }
-            activeBillingDate = new Date(intendedYear, intendedMonth, expense.dayOfMonth);
-          }
-
-          const nameLower = expense.name.toLowerCase();
-          const isLogged = recentTransactions.some((tx: any) => {
-            const txDate = tx.date;
-            if (!txDate) return false;
-
-            // Allow payment anytime in the intended billing month
-            const isSameMonth =
-              txDate.getMonth() === intendedMonth && txDate.getFullYear() === intendedYear;
-
-            // Also allow payment within [-10, +10] days of the active due date
-            const diffDays = (txDate.getTime() - activeBillingDate.getTime()) / (1000 * 3600 * 24);
-            const isNearDueDate = diffDays >= -10 && diffDays <= 10;
-
-            if (isSameMonth || isNearDueDate) {
-              if (tx.note?.toLowerCase().includes(nameLower)) return true;
-              if (tx.category === expense.category && expense.isFixed) {
-                return Math.abs(tx.amount - expense.defaultAmount) < 0.01;
-              }
-            }
-            return false;
-          });
-
-          if (!isLogged) {
-            upcomingBills.push(expense);
-          }
-        }
+        // Shared source of truth (identical to the web app's src/lib/recurring.ts):
+        // overdue bills (this month or last month within grace) or bills due soon.
+        const upcomingBills = getBillsToNotify(recurringExpenses, recentTransactions, now);
 
         if (upcomingBills.length > 0) {
           await sendTelegramNotification(botToken, userChatId, upcomingBills, appUrl);
