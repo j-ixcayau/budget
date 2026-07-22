@@ -185,6 +185,28 @@ export const checkRecurringExpenses = onSchedule(
           await sendBalanceReminderNotification(botToken, userChatId, currentMonth, appUrl);
         }
 
+        // ── Daily "nothing logged" nudge ─────────────────────────────────────
+        // If no expense has been logged in the last ~48h, gently remind the
+        // user to capture their spending while it's fresh. This targets the
+        // everyday expenses that recurring-bill reminders don't cover.
+        const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+        const recentExpenseSnap = await db
+          .collection('transactions')
+          .where('userId', '==', userId)
+          .where('date', '>=', twoDaysAgo)
+          .get();
+        const hasRecentExpense = recentExpenseSnap.docs.some((d) => d.data().type === 'expense');
+        if (!hasRecentExpense) {
+          await sendNoExpenseNudge(botToken, userChatId, appUrl);
+        }
+
+        // ── Monthly statement-check reminder ─────────────────────────────────
+        // Early each month, nudge the user to reconcile last month's card
+        // statement against what they logged (catches anything missed).
+        if (now.getDate() === 3) {
+          await sendStatementCheckReminder(botToken, userChatId, appUrl);
+        }
+
         // Get active recurring expenses
         const recurringSnapshot = await db
           .collection('recurringExpenses')
@@ -262,6 +284,46 @@ async function sendBalanceReminderNotification(
   } catch (error: any) {
     logger.error('Failed to send balance reminder', { chatId, error: error.message });
   }
+}
+
+async function sendTelegramMessage(
+  token: string,
+  chatId: string,
+  message: string,
+  context: string
+) {
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'Markdown' }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      logger.error(`Telegram API error (${context})`, { status: res.status, body: errText });
+    }
+  } catch (error: any) {
+    logger.error(`Failed to send ${context}`, { chatId, error: error.message });
+  }
+}
+
+async function sendNoExpenseNudge(token: string, chatId: string, appUrl: string) {
+  const message =
+    `👋 *Spending check*\n\n` +
+    `You haven't logged any expenses in the last couple of days. ` +
+    `Spend anything? Jot it down while it's fresh — even a rough amount helps.\n\n` +
+    `🔗 [Log an expense](${appUrl}/transactions)`;
+  await sendTelegramMessage(token, chatId, message, 'no-expense nudge');
+}
+
+async function sendStatementCheckReminder(token: string, chatId: string, appUrl: string) {
+  const message =
+    `🧾 *Statement check*\n\n` +
+    `New month! When last month's card statement is ready, upload it to catch anything you ` +
+    `forgot to log — it only flags what's missing.\n\n` +
+    `🔗 [Check statement](${appUrl}/import)`;
+  await sendTelegramMessage(token, chatId, message, 'statement-check reminder');
 }
 
 async function sendTelegramNotification(

@@ -140,6 +140,17 @@ export async function updateTransaction(
   return updateInCollection('transactions', id, data);
 }
 
+/**
+ * Add several transactions at once (used by the statement reconciliation flow
+ * when the user confirms a batch of previously-missed expenses).
+ */
+export async function bulkAddTransactions(
+  userId: string,
+  items: TransactionFormData[]
+): Promise<string[]> {
+  return Promise.all(items.map((data) => addToCollection('transactions', userId, data)));
+}
+
 export async function deleteTransaction(id: string): Promise<void> {
   return deleteFromCollection('transactions', id);
 }
