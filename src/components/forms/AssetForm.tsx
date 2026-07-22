@@ -244,7 +244,7 @@ export function AssetForm({ initialData, onSubmit, onCancel }: AssetFormProps) {
       )}
 
       {error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+        <div className="text-error text-sm bg-error/10 border border-error/20 p-3 rounded-lg">
           {error}
         </div>
       )}

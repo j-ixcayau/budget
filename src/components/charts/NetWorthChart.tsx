@@ -29,7 +29,7 @@ export function NetWorthChart({ snapshots, settings }: NetWorthChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-zinc-500">
+      <div className="h-64 flex items-center justify-center text-text-tertiary">
         No snapshot data yet. Generate a monthly snapshot to see your net worth trend.
       </div>
     );

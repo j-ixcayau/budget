@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // functions is a separate package with its own toolchain; the Firebase
+    // build artifacts and emulator cache aren't ours to lint.
+    'functions/**',
+    '.firebase/**',
   ]),
 ]);
 

@@ -9,10 +9,10 @@ interface CardProps {
 export function Card({ children, className = '', title }: CardProps) {
   return (
     <div
-      className={`glass rounded-xl p-6 transition-all duration-300 hover:shadow-indigo-500/10 ${className}`}
+      className={`glass rounded-lg p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-primary/10 ${className}`}
     >
       {title && (
-        <h3 className="text-lg font-semibold text-foreground mb-4 tracking-tight font-fira-code">
+        <h3 className="text-lg font-semibold text-text-primary mb-4 tracking-tight font-fira-code">
           {title}
         </h3>
       )}

@@ -23,21 +23,21 @@ function AssetItem({
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+    <div className="flex items-center justify-between p-3 bg-surface-hover rounded-lg">
       <div>
-        <div className="text-zinc-100 font-medium">{asset.name}</div>
-        <div className="text-green-400 font-semibold text-sm">
+        <div className="text-text-primary font-medium">{asset.name}</div>
+        <div className="text-success font-semibold text-sm">
           {formatCurrency(asset.balance, asset.currency)}
         </div>
       </div>
       <div className="flex gap-2">
-        <button onClick={() => onEdit(asset)} className="text-blue-400 hover:text-blue-300 text-sm">
+        <button
+          onClick={() => onEdit(asset)}
+          className="text-secondary hover:text-secondary text-sm"
+        >
           Edit
         </button>
-        <button
-          onClick={() => onDelete(asset.id)}
-          className="text-red-400 hover:text-red-300 text-sm"
-        >
+        <button onClick={() => onDelete(asset.id)} className="text-error hover:text-error text-sm">
           Delete
         </button>
       </div>
@@ -76,24 +76,24 @@ function CryptoAssetItem({
       : null;
 
   return (
-    <div className="p-3 bg-zinc-800/50 rounded-lg space-y-2">
+    <div className="p-3 bg-surface-hover rounded-lg space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">
+          <span className="text-xs font-bold bg-warning/20 text-warning px-1.5 py-0.5 rounded">
             {asset.coinSymbol || '???'}
           </span>
-          <span className="text-zinc-100 font-medium">{asset.name}</span>
+          <span className="text-text-primary font-medium">{asset.name}</span>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(asset)}
-            className="text-blue-400 hover:text-blue-300 text-sm"
+            className="text-secondary hover:text-secondary text-sm"
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(asset.id)}
-            className="text-red-400 hover:text-red-300 text-sm"
+            className="text-error hover:text-error text-sm"
           >
             Delete
           </button>
@@ -101,35 +101,35 @@ function CryptoAssetItem({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-        <div className="text-zinc-400">Quantity</div>
-        <div className="text-zinc-200 text-right">
+        <div className="text-text-secondary">Quantity</div>
+        <div className="text-text-primary text-right">
           {asset.quantity != null
             ? asset.quantity.toLocaleString('en-US', { maximumFractionDigits: 8 })
             : '—'}{' '}
-          <span className="text-zinc-500">{asset.coinSymbol}</span>
+          <span className="text-text-tertiary">{asset.coinSymbol}</span>
         </div>
 
         {investedDisplay && (
           <>
-            <div className="text-zinc-400">Invested</div>
-            <div className="text-zinc-200 text-right">{investedDisplay}</div>
+            <div className="text-text-secondary">Invested</div>
+            <div className="text-text-primary text-right">{investedDisplay}</div>
           </>
         )}
 
-        <div className="text-zinc-400">Current Value</div>
-        <div className="text-zinc-200 text-right">
+        <div className="text-text-secondary">Current Value</div>
+        <div className="text-text-primary text-right">
           {currentValueUsd != null ? (
             formatCurrency(currentValueUsd, 'USD')
           ) : (
-            <span className="text-zinc-500">Loading...</span>
+            <span className="text-text-tertiary">Loading...</span>
           )}
         </div>
 
         {price?.usd_24h_change != null && (
           <>
-            <div className="text-zinc-400">24h Change</div>
+            <div className="text-text-secondary">24h Change</div>
             <div
-              className={`text-right font-medium ${price.usd_24h_change >= 0 ? 'text-green-400' : 'text-red-400'}`}
+              className={`text-right font-medium ${price.usd_24h_change >= 0 ? 'text-success' : 'text-error'}`}
             >
               {price.usd_24h_change >= 0 ? '+' : ''}
               {price.usd_24h_change.toFixed(2)}%
@@ -139,9 +139,9 @@ function CryptoAssetItem({
 
         {pl && (
           <>
-            <div className="text-zinc-400">P/L</div>
+            <div className="text-text-secondary">P/L</div>
             <div
-              className={`text-right font-semibold ${pl.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}
+              className={`text-right font-semibold ${pl.amount >= 0 ? 'text-success' : 'text-error'}`}
             >
               {pl.amount >= 0 ? '+' : ''}
               {formatCurrency(pl.amount, 'USD')}{' '}
@@ -155,8 +155,8 @@ function CryptoAssetItem({
 
         {plApprox && currentValueUsd != null && asset.investedAmount != null && (
           <>
-            <div className="text-zinc-400">P/L (approx)</div>
-            <div className="text-zinc-300 text-right text-xs">
+            <div className="text-text-secondary">P/L (approx)</div>
+            <div className="text-text-secondary text-right text-xs">
               Value: {formatCurrency(currentValueUsd, 'USD')} vs Invested: {investedDisplay}
             </div>
           </>
@@ -204,26 +204,26 @@ function CryptoPortfolioSummary({
 
   return (
     <div className="grid grid-cols-3 gap-3 mb-4">
-      <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-        <div className="text-xs text-zinc-500 mb-1">Total Invested</div>
-        <div className="text-sm font-semibold text-zinc-200">
+      <div className="bg-surface-hover rounded-lg p-3 text-center">
+        <div className="text-xs text-text-tertiary mb-1">Total Invested</div>
+        <div className="text-sm font-semibold text-text-primary">
           {formatCurrency(summary.totalInvestedBase, baseCurrency)}
         </div>
       </div>
-      <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-        <div className="text-xs text-zinc-500 mb-1">Current Value</div>
-        <div className="text-sm font-semibold text-zinc-200">
+      <div className="bg-surface-hover rounded-lg p-3 text-center">
+        <div className="text-xs text-text-tertiary mb-1">Current Value</div>
+        <div className="text-sm font-semibold text-text-primary">
           {summary.totalCurrentBase > 0 ? (
             formatCurrency(summary.totalCurrentBase, baseCurrency)
           ) : (
-            <span className="text-zinc-500">Loading...</span>
+            <span className="text-text-tertiary">Loading...</span>
           )}
         </div>
       </div>
-      <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
-        <div className="text-xs text-zinc-500 mb-1">Total P/L</div>
+      <div className="bg-surface-hover rounded-lg p-3 text-center">
+        <div className="text-xs text-text-tertiary mb-1">Total P/L</div>
         <div
-          className={`text-sm font-semibold ${summary.pl.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          className={`text-sm font-semibold ${summary.pl.amount >= 0 ? 'text-success' : 'text-error'}`}
         >
           {summary.totalCurrentBase > 0 ? (
             <>
@@ -276,7 +276,7 @@ export default function AssetsPage() {
     <AuthGuard>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-zinc-100">Assets</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Assets</h1>
           <div className="flex gap-2">
             {cashAssets.length > 0 && (
               <Button variant="secondary" onClick={() => setIsBulkUpdateOpen(true)}>
@@ -293,7 +293,7 @@ export default function AssetsPage() {
               <Card key={i}>
                 <div className="space-y-3">
                   {[...Array(3)].map((_, j) => (
-                    <div key={j} className="h-14 bg-zinc-800/60 rounded animate-pulse" />
+                    <div key={j} className="h-14 bg-surface-hover/60 rounded-sm animate-pulse" />
                   ))}
                 </div>
               </Card>
@@ -303,7 +303,7 @@ export default function AssetsPage() {
           <Card>
             <div className="py-12 flex flex-col items-center gap-4 text-center">
               <svg
-                className="w-12 h-12 text-zinc-700"
+                className="w-12 h-12 text-text-tertiary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -316,8 +316,8 @@ export default function AssetsPage() {
                 />
               </svg>
               <div>
-                <p className="text-zinc-300 font-medium">No assets yet</p>
-                <p className="text-zinc-500 text-sm mt-1">
+                <p className="text-text-secondary font-medium">No assets yet</p>
+                <p className="text-text-tertiary text-sm mt-1">
                   Add your bank accounts, cash, or crypto holdings.
                 </p>
               </div>
@@ -330,7 +330,7 @@ export default function AssetsPage() {
             <Card title="Cash / Bank">
               <div className="space-y-3">
                 {cashAssets.length === 0 ? (
-                  <div className="text-zinc-500 text-sm py-2">No cash or bank assets.</div>
+                  <div className="text-text-tertiary text-sm py-2">No cash or bank assets.</div>
                 ) : (
                   cashAssets.map((asset) => (
                     <AssetItem
@@ -350,7 +350,7 @@ export default function AssetsPage() {
                 <span className="flex items-center gap-2">
                   Crypto
                   {pricesLoading && (
-                    <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                    <span className="inline-block w-2 h-2 bg-warning rounded-full animate-pulse" />
                   )}
                 </span>
               }
@@ -365,7 +365,7 @@ export default function AssetsPage() {
               )}
               <div className="space-y-3">
                 {cryptoAssets.length === 0 ? (
-                  <div className="text-zinc-500 text-sm py-2">No crypto assets.</div>
+                  <div className="text-text-tertiary text-sm py-2">No crypto assets.</div>
                 ) : (
                   cryptoAssets.map((asset) => (
                     <CryptoAssetItem

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import type { Transaction, UserSettings } from '@/types';
 import { convertToBaseCurrency, formatCurrency } from '@/lib/currency';
 
@@ -44,9 +45,35 @@ export function ExpensesPieChart({ transactions, settings }: ExpensesPieChartPro
       .sort((a, b) => b.value - a.value);
   }, [categoryTotals]);
 
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+
+  const renderTooltip = ({ active, payload }: TooltipContentProps<number, string>) => {
+    if (!active || !payload?.length) return null;
+    const entry = payload[0];
+    const name = String(entry.name ?? '');
+    const value = Number(entry.value ?? 0);
+    const color = (entry.payload as { fill?: string } | undefined)?.fill;
+    const pct = total > 0 ? (value / total) * 100 : 0;
+    return (
+      <div className="glass-card rounded-md px-3 py-2 text-sm shadow-lg">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: color }}
+          />
+          <span className="font-medium text-text-primary">{name}</span>
+        </div>
+        <div className="mt-1 font-fira-code tabular-nums text-text-secondary">
+          {formatCurrency(value, baseCurrency)}
+          <span className="ml-1.5 text-text-tertiary">({pct.toFixed(1)}%)</span>
+        </div>
+      </div>
+    );
+  };
+
   if (data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-zinc-500">
+      <div className="h-64 flex items-center justify-center text-text-tertiary">
         No expenses this month.
       </div>
     );
@@ -68,15 +95,10 @@ export function ExpensesPieChart({ transactions, settings }: ExpensesPieChartPro
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip
-          contentStyle={{
-            backgroundColor: '#18181b',
-            border: '1px solid #27272a',
-            borderRadius: '8px',
-          }}
-          formatter={(value) => [formatCurrency(Number(value), baseCurrency), 'Amount']}
+        <Tooltip content={renderTooltip} />
+        <Legend
+          formatter={(value) => <span className="text-text-secondary text-sm">{value}</span>}
         />
-        <Legend formatter={(value) => <span className="text-zinc-300 text-sm">{value}</span>} />
       </PieChart>
     </ResponsiveContainer>
   );

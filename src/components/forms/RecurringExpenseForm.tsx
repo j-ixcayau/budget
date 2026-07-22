@@ -131,15 +131,18 @@ export function RecurringExpenseForm({
           id="isActive"
           checked={formData.isActive}
           onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-          className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-blue-600 focus:ring-blue-500"
+          className="w-4 h-4 rounded border-border bg-surface-hover text-primary focus:ring-primary"
         />
-        <label htmlFor="isActive" className="text-sm font-medium text-zinc-300 cursor-pointer">
+        <label
+          htmlFor="isActive"
+          className="text-sm font-medium text-text-secondary cursor-pointer"
+        >
           Active (Enabled)
         </label>
       </div>
 
       {error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+        <div className="text-error text-sm bg-error/10 border border-error/20 p-3 rounded-lg">
           {error}
         </div>
       )}

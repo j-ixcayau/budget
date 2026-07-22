@@ -41,7 +41,7 @@ function NetWorthDelta({ current, previous }: { current: number; previous?: numb
   return (
     <span
       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-        isPositive ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+        isPositive ? 'bg-success/15 text-success' : 'bg-error/15 text-error'
       }`}
     >
       {isPositive ? '+' : ''}
@@ -126,8 +126,8 @@ export default function SnapshotsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Monthly Snapshots</h1>
-            <p className="text-sm text-zinc-500 mt-0.5">
+            <h1 className="text-2xl font-bold text-text-primary">Monthly Snapshots</h1>
+            <p className="text-sm text-text-tertiary mt-0.5">
               Track your net worth over time. Multiple snapshots per month are supported.
             </p>
           </div>
@@ -148,7 +148,7 @@ export default function SnapshotsPage() {
           <Card>
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-14 bg-zinc-800/60 rounded-lg animate-pulse" />
+                <div key={i} className="h-14 bg-surface-hover/60 rounded-lg animate-pulse" />
               ))}
             </div>
           </Card>
@@ -156,7 +156,7 @@ export default function SnapshotsPage() {
           <Card>
             <div className="py-12 flex flex-col items-center gap-4 text-center">
               <svg
-                className="w-12 h-12 text-zinc-700"
+                className="w-12 h-12 text-text-tertiary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -169,8 +169,8 @@ export default function SnapshotsPage() {
                 />
               </svg>
               <div>
-                <p className="text-zinc-300 font-medium">No snapshots yet</p>
-                <p className="text-zinc-500 text-sm mt-1">
+                <p className="text-text-secondary font-medium">No snapshots yet</p>
+                <p className="text-text-tertiary text-sm mt-1">
                   Click &quot;Generate Snapshot&quot; to capture your current net worth.
                 </p>
               </div>
@@ -190,15 +190,15 @@ export default function SnapshotsPage() {
                 <div key={month}>
                   {/* Month header */}
                   <div className="flex items-center gap-3 mb-3">
-                    <h2 className="text-sm font-semibold text-zinc-400 tracking-wide uppercase">
+                    <h2 className="text-sm font-semibold text-text-secondary tracking-wide uppercase">
                       {month}
                     </h2>
                     {isCurrentMonth && (
-                      <span className="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-primary/20 text-secondary border border-primary/30 px-2 py-0.5 rounded-full">
                         Current Month
                       </span>
                     )}
-                    <span className="text-xs text-zinc-600">
+                    <span className="text-xs text-text-tertiary">
                       {monthSnapshots.length === 1
                         ? '1 snapshot'
                         : `${monthSnapshots.length} snapshots`}
@@ -209,7 +209,7 @@ export default function SnapshotsPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="text-left text-zinc-500 text-xs border-b border-zinc-800 uppercase tracking-wide">
+                          <tr className="text-left text-text-tertiary text-xs border-b border-border uppercase tracking-wide">
                             <th className="pb-3 font-medium">Generated</th>
                             <th className="pb-3 font-medium">Assets</th>
                             <th className="pb-3 font-medium">Liabilities</th>
@@ -225,42 +225,46 @@ export default function SnapshotsPage() {
                             return (
                               <tr
                                 key={snapshot.id}
-                                className={`border-b border-zinc-800/40 last:border-0 ${
-                                  isLatest ? 'bg-zinc-800/20' : 'opacity-60'
+                                className={`border-b border-border last:border-0 ${
+                                  isLatest ? 'bg-surface/40' : 'opacity-60'
                                 }`}
                               >
                                 <td className="py-3 pr-4">
                                   <div className="flex items-center gap-2">
                                     {isLatest && (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-0.5 self-start" />
+                                      <span className="w-1.5 h-1.5 rounded-full bg-secondary shrink-0 mt-0.5 self-start" />
                                     )}
                                     <div>
                                       <div
                                         className={`text-sm ${
-                                          isLatest ? 'text-zinc-200 font-medium' : 'text-zinc-400'
+                                          isLatest
+                                            ? 'text-text-primary font-medium'
+                                            : 'text-text-secondary'
                                         }`}
                                       >
                                         {date}
                                       </div>
                                       {time !== null ? (
-                                        <div className="text-xs text-zinc-500 mt-0.5">{time}</div>
+                                        <div className="text-xs text-text-tertiary mt-0.5">
+                                          {time}
+                                        </div>
                                       ) : (
-                                        <div className="text-xs text-zinc-700 mt-0.5 italic">
+                                        <div className="text-xs text-text-tertiary mt-0.5 italic">
                                           time not recorded
                                         </div>
                                       )}
                                     </div>
                                     {isLatest && monthSnapshots.length > 1 && (
-                                      <span className="text-xs text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded self-start">
+                                      <span className="text-xs text-text-tertiary bg-surface-hover px-1.5 py-0.5 rounded self-start">
                                         latest
                                       </span>
                                     )}
                                   </div>
                                 </td>
-                                <td className="py-3 pr-4 text-green-400 text-sm font-medium">
+                                <td className="py-3 pr-4 text-success text-sm font-medium">
                                   {formatCurrency(snapshot.totalAssets, settings?.baseCurrency)}
                                 </td>
-                                <td className="py-3 pr-4 text-red-400 text-sm font-medium">
+                                <td className="py-3 pr-4 text-error text-sm font-medium">
                                   {formatCurrency(
                                     snapshot.totalLiabilities,
                                     settings?.baseCurrency
@@ -270,7 +274,7 @@ export default function SnapshotsPage() {
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span
                                       className={`text-sm font-bold ${
-                                        snapshot.netWorth >= 0 ? 'text-blue-400' : 'text-red-400'
+                                        snapshot.netWorth >= 0 ? 'text-secondary' : 'text-error'
                                       }`}
                                     >
                                       {formatCurrency(snapshot.netWorth, settings?.baseCurrency)}
@@ -287,7 +291,7 @@ export default function SnapshotsPage() {
                                   <button
                                     onClick={() => handleDelete(snapshot.id)}
                                     disabled={deletingId === snapshot.id}
-                                    className="text-xs text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-40"
+                                    className="text-xs text-text-tertiary hover:text-error transition-colors disabled:opacity-40"
                                   >
                                     {deletingId === snapshot.id ? 'Deleting…' : 'Delete'}
                                   </button>

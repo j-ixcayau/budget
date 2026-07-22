@@ -127,8 +127,8 @@ export default function ImportPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Check Statement</h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <h1 className="text-2xl font-bold text-text-primary">Check Statement</h1>
+            <p className="text-sm text-text-secondary mt-1">
               Upload a card statement — I&apos;ll flag only the expenses you haven&apos;t logged
               yet.
             </p>
@@ -148,10 +148,10 @@ export default function ImportPage() {
               e.preventDefault();
               handleFiles(e.dataTransfer.files);
             }}
-            className="border-2 border-dashed border-zinc-700 rounded-lg py-10 flex flex-col items-center gap-3 text-center"
+            className="border-2 border-dashed border-border rounded-lg py-10 flex flex-col items-center gap-3 text-center"
           >
             <svg
-              className="w-10 h-10 text-zinc-600"
+              className="w-10 h-10 text-text-tertiary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -163,7 +163,7 @@ export default function ImportPage() {
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
-            <p className="text-zinc-300 text-sm">Drop your statement PDF(s) here, or</p>
+            <p className="text-text-secondary text-sm">Drop your statement PDF(s) here, or</p>
             <input
               ref={fileInput}
               type="file"
@@ -175,7 +175,7 @@ export default function ImportPage() {
             <Button onClick={() => fileInput.current?.click()} disabled={parsing}>
               {parsing ? 'Reading…' : 'Choose file(s)'}
             </Button>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               Banco Promerica and BAC Credomatic supported. Files are read on your device only.
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function ImportPage() {
               {statements.map((s, i) => (
                 <span
                   key={i}
-                  className="text-xs bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-full border border-zinc-700"
+                  className="text-xs bg-surface-hover text-text-secondary px-2.5 py-1 rounded-full border border-border"
                 >
                   {s.parsed.cardLabel ?? s.parsed.bank} · {s.parsed.rows.length} rows
                 </span>
@@ -194,7 +194,7 @@ export default function ImportPage() {
           )}
 
           {error && (
-            <div className="mt-4 text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+            <div className="mt-4 text-error text-sm bg-error/10 border border-error/20 p-3 rounded-lg">
               {error}
             </div>
           )}
@@ -211,7 +211,7 @@ export default function ImportPage() {
             </div>
 
             {savedCount > 0 && (
-              <div className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 p-3 rounded-lg">
+              <div className="text-sm text-success bg-success/10 border border-success/20 p-3 rounded-lg">
                 Added {savedCount} transaction{savedCount === 1 ? '' : 's'}. Nicely caught up.
               </div>
             )}
@@ -219,9 +219,9 @@ export default function ImportPage() {
             {/* MISSING — the point of the feature */}
             <Card>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-zinc-100">
+                <h2 className="font-semibold text-text-primary">
                   Missing expenses{' '}
-                  <span className="text-zinc-500 font-normal">({result.missing.length})</span>
+                  <span className="text-text-tertiary font-normal">({result.missing.length})</span>
                 </h2>
                 {result.missing.length > 0 && (
                   <Button
@@ -234,7 +234,7 @@ export default function ImportPage() {
               </div>
 
               {result.missing.length === 0 ? (
-                <p className="text-sm text-zinc-500 py-6 text-center">
+                <p className="text-sm text-text-tertiary py-6 text-center">
                   Nothing missing — every statement charge is already logged. 🎉
                 </p>
               ) : (
@@ -244,7 +244,7 @@ export default function ImportPage() {
                     return (
                       <div
                         key={rowKey(r)}
-                        className="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0"
+                        className="flex items-center gap-3 py-2 border-b border-border last:border-0"
                       >
                         <input
                           type="checkbox"
@@ -253,13 +253,13 @@ export default function ImportPage() {
                           className="w-4 h-4 accent-indigo-500 shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-zinc-200 truncate">{r.row.description}</p>
-                          <p className="text-xs text-zinc-500">{r.row.date}</p>
+                          <p className="text-sm text-text-primary truncate">{r.row.description}</p>
+                          <p className="text-xs text-text-tertiary">{r.row.date}</p>
                         </div>
                         <select
                           value={edit.category}
                           onChange={(e) => setEdit(r, { category: e.target.value })}
-                          className="bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-xs text-zinc-200 shrink-0"
+                          className="bg-surface-hover border border-border rounded-md px-2 py-1 text-xs text-text-primary shrink-0"
                         >
                           {TRANSACTION_CATEGORIES.map((c) => (
                             <option key={c} value={c}>
@@ -267,7 +267,7 @@ export default function ImportPage() {
                             </option>
                           ))}
                         </select>
-                        <span className="text-sm font-medium text-red-400 w-24 text-right shrink-0">
+                        <span className="text-sm font-medium text-error w-24 text-right shrink-0">
                           {formatCurrency(r.row.amount, r.row.currency)}
                         </span>
                       </div>
@@ -280,11 +280,11 @@ export default function ImportPage() {
             {/* ROUNDED — logged but amount differs */}
             {result.rounded.length > 0 && (
               <Card>
-                <h2 className="font-semibold text-zinc-100 mb-1">
+                <h2 className="font-semibold text-text-primary mb-1">
                   Rounded entries{' '}
-                  <span className="text-zinc-500 font-normal">({result.rounded.length})</span>
+                  <span className="text-text-tertiary font-normal">({result.rounded.length})</span>
                 </h2>
-                <p className="text-xs text-zinc-500 mb-4">
+                <p className="text-xs text-text-tertiary mb-4">
                   You logged these, but the amount differs from the statement. Fix to use the exact
                   amount.
                 </p>
@@ -292,11 +292,11 @@ export default function ImportPage() {
                   {result.rounded.map((r) => (
                     <div
                       key={rowKey(r)}
-                      className="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0"
+                      className="flex items-center gap-3 py-2 border-b border-border last:border-0"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 truncate">{r.row.description}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-sm text-text-primary truncate">{r.row.description}</p>
+                        <p className="text-xs text-text-tertiary">
                           logged {formatCurrency(r.match!.amount, r.row.currency)} · statement{' '}
                           {formatCurrency(r.row.amount, r.row.currency)}
                         </p>
@@ -317,18 +317,18 @@ export default function ImportPage() {
                   onClick={() => setShowLogged((s) => !s)}
                   className="w-full flex items-center justify-between text-left"
                 >
-                  <h2 className="font-semibold text-zinc-100">
+                  <h2 className="font-semibold text-text-primary">
                     Already logged{' '}
-                    <span className="text-zinc-500 font-normal">({result.logged.length})</span>
+                    <span className="text-text-tertiary font-normal">({result.logged.length})</span>
                   </h2>
-                  <span className="text-zinc-500 text-sm">{showLogged ? 'Hide' : 'Show'}</span>
+                  <span className="text-text-tertiary text-sm">{showLogged ? 'Hide' : 'Show'}</span>
                 </button>
                 {showLogged && (
                   <div className="space-y-1 mt-4">
                     {result.logged.map((r) => (
                       <div
                         key={rowKey(r)}
-                        className="flex items-center justify-between py-1.5 text-sm text-zinc-400"
+                        className="flex items-center justify-between py-1.5 text-sm text-text-secondary"
                       >
                         <span className="truncate">{r.row.description}</span>
                         <span className="shrink-0">
@@ -357,15 +357,15 @@ function SummaryStat({
   tone: 'amber' | 'blue' | 'green' | 'zinc';
 }) {
   const tones = {
-    amber: 'text-amber-400',
-    blue: 'text-blue-400',
-    green: 'text-green-400',
-    zinc: 'text-zinc-400',
+    amber: 'text-warning',
+    blue: 'text-secondary',
+    green: 'text-success',
+    zinc: 'text-text-secondary',
   };
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+    <div className="bg-surface border border-border rounded-lg p-4">
       <p className={`text-2xl font-bold ${tones[tone]}`}>{value}</p>
-      <p className="text-xs text-zinc-500 mt-1">{label}</p>
+      <p className="text-xs text-text-tertiary mt-1">{label}</p>
     </div>
   );
 }
