@@ -22,8 +22,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-zinc-400">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-text-secondary">Loading...</div>
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -49,7 +49,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
         <div className="flex items-center gap-4 mb-6 lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="flex h-11 w-11 items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded-md transition-colors"
             aria-label="Open menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,7 +61,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
               />
             </svg>
           </button>
-          <span className="text-lg font-bold text-zinc-100">Budget</span>
+          <span className="text-lg font-bold text-text-primary">Budget</span>
         </div>
 
         {children}

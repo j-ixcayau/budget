@@ -119,18 +119,18 @@ export function DebtForm({ debtType, initialData, onSubmit, onCancel }: DebtForm
         onChange={(e) => setFormData({ ...formData, monthlyPayment: e.target.value })}
       />
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-zinc-300">Note (optional)</label>
+        <label className="block text-sm font-medium text-text-secondary">Note (optional)</label>
         <textarea
           value={formData.note}
           onChange={(e) => setFormData({ ...formData, note: e.target.value })}
           rows={2}
           placeholder="What was it for?"
-          className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-2 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          className="w-full bg-surface-hover border border-border text-text-primary rounded-lg px-3 py-2 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
         />
       </div>
 
       {error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+        <div className="text-error text-sm bg-error/10 border border-error/20 p-3 rounded-lg">
           {error}
         </div>
       )}

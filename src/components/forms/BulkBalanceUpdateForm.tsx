@@ -54,7 +54,7 @@ export function BulkBalanceUpdateForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-zinc-400">
+      <p className="text-sm text-text-secondary">
         Update your cash/bank balances to their current real values.
       </p>
 
@@ -65,17 +65,17 @@ export function BulkBalanceUpdateForm({
             <div
               key={asset.id}
               className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                changed ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-zinc-800/50'
+                changed ? 'bg-primary/10 border border-primary/20' : 'bg-surface-hover'
               }`}
             >
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-zinc-100 truncate">{asset.name}</div>
-                <div className="text-xs text-zinc-500">
+                <div className="text-sm font-medium text-text-primary truncate">{asset.name}</div>
+                <div className="text-xs text-text-tertiary">
                   Was: {formatCurrency(asset.balance, asset.currency)}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-xs text-zinc-500 font-medium">{asset.currency}</span>
+                <span className="text-xs text-text-tertiary font-medium">{asset.currency}</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -91,13 +91,13 @@ export function BulkBalanceUpdateForm({
       </div>
 
       {error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+        <div className="text-error text-sm bg-error/10 border border-error/20 p-3 rounded-lg">
           {error}
         </div>
       )}
 
       <div className="flex items-center justify-between pt-2">
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-text-tertiary">
           {changedCount > 0
             ? `${changedCount} balance${changedCount > 1 ? 's' : ''} changed`
             : 'No changes'}

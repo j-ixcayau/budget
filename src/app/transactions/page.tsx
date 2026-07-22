@@ -2,13 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { AuthGuard } from '@/components/layout';
-import { Card, Button, Modal, Select } from '@/components/ui';
+import { Card, Button, Modal, Select, SkeletonList, useToast } from '@/components/ui';
 import { TransactionForm } from '@/components/forms';
 import { useTransactions } from '@/hooks/useFirestore';
 import { useAuth } from '@/hooks/useAuth';
 import { addTransaction, updateTransaction, deleteTransaction } from '@/lib/firestore';
 import { formatCurrency } from '@/lib/currency';
-import type { Transaction, TransactionFormData } from '@/types';
+import type { Currency, Transaction, TransactionFormData } from '@/types';
 
 /** Returns "YYYY-MM" for the current local month. */
 function getCurrentMonth(): string {
@@ -34,6 +34,7 @@ const MONTH_OPTIONS = buildMonthOptions();
 
 export default function TransactionsPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const { transactions, loading } = useTransactions(selectedMonth);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,17 +44,37 @@ export default function TransactionsPage() {
     if (!user) return;
     await addTransaction(user.uid, data);
     setIsModalOpen(false);
+    toast.success('Transaction added');
   };
 
   const handleEdit = async (data: TransactionFormData) => {
     if (!editingTransaction) return;
     await updateTransaction(editingTransaction.id, data);
     setEditingTransaction(null);
+    toast.success('Transaction updated');
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this transaction?')) return;
-    await deleteTransaction(id);
+  const handleDelete = async (t: Transaction) => {
+    await deleteTransaction(t.id);
+    // Rebuild the form data so "Undo" can restore the record.
+    const restore: TransactionFormData = {
+      date: t.date,
+      amount: t.amount,
+      type: t.type,
+      category: t.category,
+      currency: t.currency,
+      ...(t.note !== undefined ? { note: t.note } : {}),
+    };
+    toast.success('Transaction deleted', {
+      duration: 6000,
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          if (!user) return;
+          await addTransaction(user.uid, restore);
+        },
+      },
+    });
   };
 
   const handleExportCSV = () => {
@@ -98,7 +119,7 @@ export default function TransactionsPage() {
       }
     });
     return Object.entries(totals)
-      .map(([curr, amt]) => formatCurrency(amt, curr as any))
+      .map(([curr, amt]) => formatCurrency(amt, curr as Currency))
       .join(' | ');
   }, [transactions]);
 
@@ -107,11 +128,11 @@ export default function TransactionsPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Transactions</h1>
+            <h1 className="text-2xl font-bold text-text-primary">Transactions</h1>
             {!loading && (
-              <p className="text-sm text-zinc-400 mt-1">
+              <p className="text-sm text-text-secondary mt-1">
                 Total Expenses:{' '}
-                <span className="font-medium text-red-400">
+                <span className="font-medium text-error">
                   {expensesSummary || formatCurrency(0)}
                 </span>
               </p>
@@ -137,15 +158,11 @@ export default function TransactionsPage() {
 
         <Card>
           {loading ? (
-            <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-10 bg-zinc-800/60 rounded animate-pulse" />
-              ))}
-            </div>
+            <SkeletonList rows={5} rowClassName="h-10" />
           ) : transactions.length === 0 ? (
             <div className="py-12 flex flex-col items-center gap-4 text-center">
               <svg
-                className="w-12 h-12 text-zinc-700"
+                className="w-12 h-12 text-text-tertiary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -158,8 +175,8 @@ export default function TransactionsPage() {
                 />
               </svg>
               <div>
-                <p className="text-zinc-300 font-medium">No transactions</p>
-                <p className="text-zinc-500 text-sm mt-1">
+                <p className="text-text-primary font-medium">No transactions</p>
+                <p className="text-text-secondary text-sm mt-1">
                   No transactions found for {selectedLabel}.
                 </p>
               </div>
@@ -169,55 +186,58 @@ export default function TransactionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-zinc-400 text-sm border-b border-zinc-800">
+                  <tr className="text-left text-text-secondary text-sm border-b border-border">
                     <th className="pb-3 font-medium">Date</th>
                     <th className="pb-3 font-medium">Type</th>
                     <th className="pb-3 font-medium">Category</th>
                     <th className="pb-3 font-medium">Amount</th>
                     <th className="pb-3 font-medium hidden sm:table-cell">Note</th>
-                    <th className="pb-3 font-medium">Actions</th>
+                    <th className="pb-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((t) => (
-                    <tr key={t.id} className="border-b border-zinc-800/50">
-                      <td className="py-3 text-zinc-300 text-sm">
+                    <tr
+                      key={t.id}
+                      className="border-b border-border/60 transition-colors hover:bg-surface-hover/40"
+                    >
+                      <td className="py-3 text-text-secondary text-sm">
                         {t.date.toDate().toLocaleDateString()}
                       </td>
                       <td className="py-3">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
                             t.type === 'income'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
+                              ? 'bg-success/15 text-success'
+                              : 'bg-error/15 text-error'
                           }`}
                         >
                           {t.type}
                         </span>
                       </td>
-                      <td className="py-3 text-zinc-300 text-sm">{t.category}</td>
+                      <td className="py-3 text-text-primary text-sm">{t.category}</td>
                       <td
-                        className={`py-3 font-medium text-sm ${
-                          t.type === 'income' ? 'text-green-400' : 'text-red-400'
+                        className={`py-3 font-fira-code font-medium text-sm tabular-nums ${
+                          t.type === 'income' ? 'text-success' : 'text-error'
                         }`}
                       >
                         {t.type === 'income' ? '+' : '-'}
                         {formatCurrency(t.amount, t.currency)}
                       </td>
-                      <td className="py-3 text-zinc-400 text-sm hidden sm:table-cell">
+                      <td className="py-3 text-text-secondary text-sm hidden sm:table-cell">
                         {t.note || '—'}
                       </td>
                       <td className="py-3">
-                        <div className="flex gap-2">
+                        <div className="flex justify-end gap-1">
                           <button
                             onClick={() => setEditingTransaction(t)}
-                            className="text-blue-400 hover:text-blue-300 text-sm"
+                            className="rounded-sm px-2.5 py-1.5 text-sm text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
                           >
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(t.id)}
-                            className="text-red-400 hover:text-red-300 text-sm"
+                            onClick={() => handleDelete(t)}
+                            className="rounded-sm px-2.5 py-1.5 text-sm text-error hover:bg-error/10 transition-colors"
                           >
                             Delete
                           </button>

@@ -52,11 +52,11 @@ export default function SettingsPage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-zinc-100">Settings</h1>
+        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
 
         <Card title="Currency Settings">
           {loading ? (
-            <div className="text-zinc-400">Loading...</div>
+            <div className="text-text-secondary">Loading...</div>
           ) : (
             <div className="space-y-4">
               <Select
@@ -68,11 +68,11 @@ export default function SettingsPage() {
                 options={CURRENCY_OPTIONS}
               />
 
-              <div className="border-t border-zinc-800 pt-4 mt-4">
-                <h4 className="text-sm font-medium text-zinc-300 mb-3">
+              <div className="border-t border-border pt-4 mt-4">
+                <h4 className="text-sm font-medium text-text-secondary mb-3">
                   Conversion Rates (to base currency)
                 </h4>
-                <p className="text-xs text-zinc-500 mb-4">
+                <p className="text-xs text-text-tertiary mb-4">
                   Enter the rate to convert each currency to your base currency. For example, if 1
                   USD = 7.75 Q, enter 7.75 for USD rate.
                 </p>
@@ -112,10 +112,10 @@ export default function SettingsPage() {
         </Card>
 
         <Card title="About">
-          <div className="text-zinc-400 text-sm space-y-2">
+          <div className="text-text-secondary text-sm space-y-2">
             <p>Personal Finance Dashboard</p>
             <p>A minimal budget tracking app for personal use.</p>
-            <p className="text-zinc-500">
+            <p className="text-text-tertiary">
               Data is stored in Firebase Firestore and is private to your account.
             </p>
           </div>

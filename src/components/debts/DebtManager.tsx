@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { AuthGuard } from '@/components/layout';
-import { Card, Button, Modal } from '@/components/ui';
+import { Card, Button, Modal, SkeletonList, useToast } from '@/components/ui';
 import { DebtForm } from '@/components/forms';
 import { useDebts, useUserSettings } from '@/hooks/useFirestore';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,7 +44,7 @@ function DebtHistory({ debt }: { debt: Debt }) {
     <div className="mt-2">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors group"
+        className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors group"
       >
         <svg
           className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-90' : ''}`}
@@ -58,11 +58,11 @@ function DebtHistory({ debt }: { debt: Debt }) {
       </button>
 
       {open && (
-        <div className="mt-2 ml-1 pl-3 border-l border-zinc-700/60 space-y-2">
+        <div className="mt-2 ml-1 pl-3 border-l border-border/60 space-y-2">
           {loading ? (
-            <p className="text-xs text-zinc-500 py-1">Loading…</p>
+            <p className="text-xs text-text-tertiary py-1">Loading…</p>
           ) : payments.length === 0 ? (
-            <p className="text-xs text-zinc-600 py-1">No transactions recorded yet.</p>
+            <p className="text-xs text-text-tertiary py-1">No transactions recorded yet.</p>
           ) : (
             payments.map((p) => {
               const isPayment = p.type === 'payment';
@@ -75,31 +75,33 @@ function DebtHistory({ debt }: { debt: Debt }) {
                 <div key={p.id} className="flex items-start gap-2">
                   <span
                     className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
-                      isPayment ? 'bg-green-500' : 'bg-amber-400'
+                      isPayment ? 'bg-success' : 'bg-warning'
                     }`}
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`text-xs font-medium ${
-                          isPayment ? 'text-green-400' : 'text-amber-400'
+                          isPayment ? 'text-success' : 'text-warning'
                         }`}
                       >
                         {isPayment ? '− ' : '+ '}
                         {formatCurrency(p.amount, debt.currency)}
                       </span>
-                      <span className="text-xs text-zinc-600">{dateLabel}</span>
+                      <span className="text-xs text-text-tertiary">{dateLabel}</span>
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded-full border ${
                           isPayment
-                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            ? 'bg-success/10 text-success border-success/20'
+                            : 'bg-warning/10 text-warning border-warning/20'
                         }`}
                       >
                         {isPayment ? 'payment' : 'additional'}
                       </span>
                     </div>
-                    {p.note && <p className="text-xs text-zinc-500 mt-0.5 truncate">{p.note}</p>}
+                    {p.note && (
+                      <p className="text-xs text-text-tertiary mt-0.5 truncate">{p.note}</p>
+                    )}
                   </div>
                 </div>
               );
@@ -155,11 +157,11 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
   };
 
   const fieldClass =
-    'w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+    'w-full bg-surface-hover border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-1 bg-zinc-800/80 rounded-lg p-1">
+      <div className="flex gap-1 bg-surface-hover/80 rounded-lg p-1">
         {(['payment', 'additional'] as DebtTransactionType[]).map((t) => (
           <button
             key={t}
@@ -172,9 +174,9 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
               txType === t
                 ? t === 'payment'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-amber-500 text-white'
-                : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-success text-white'
+                  : 'bg-warning text-white'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             {t === 'payment' ? '✓ Payment Received' : '+ Additional Loan'}
@@ -182,23 +184,23 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
         ))}
       </div>
 
-      <div className="text-sm text-zinc-400 bg-zinc-800/40 rounded-lg px-3 py-2 space-x-1">
+      <div className="text-sm text-text-secondary bg-surface-hover/40 rounded-lg px-3 py-2 space-x-1">
         {isPayment ? (
           <>
-            <span className="text-zinc-500">Outstanding:</span>
-            <span className="text-green-400 font-semibold">
+            <span className="text-text-tertiary">Outstanding:</span>
+            <span className="text-success font-semibold">
               {formatCurrency(debt.remainingAmount, debt.currency)}
             </span>
           </>
         ) : (
           <>
-            <span className="text-zinc-500">Total lent:</span>
-            <span className="text-amber-400 font-semibold">
+            <span className="text-text-tertiary">Total lent:</span>
+            <span className="text-warning font-semibold">
               {formatCurrency(debt.amount, debt.currency)}
             </span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-zinc-500">Remaining:</span>
-            <span className="text-green-400 font-semibold">
+            <span className="text-text-tertiary">·</span>
+            <span className="text-text-tertiary">Remaining:</span>
+            <span className="text-success font-semibold">
               {formatCurrency(debt.remainingAmount, debt.currency)}
             </span>
           </>
@@ -206,7 +208,7 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
       </div>
 
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-zinc-300">
+        <label className="block text-sm font-medium text-text-secondary">
           {isPayment ? 'Amount Paid' : 'Additional Amount'} ({debt.currency})
         </label>
         <input
@@ -222,7 +224,7 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
       </div>
 
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-zinc-300">Date</label>
+        <label className="block text-sm font-medium text-text-secondary">Date</label>
         <input
           type="date"
           value={date}
@@ -233,7 +235,7 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
       </div>
 
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-zinc-300">Note (optional)</label>
+        <label className="block text-sm font-medium text-text-secondary">Note (optional)</label>
         <input
           type="text"
           value={note}
@@ -244,7 +246,7 @@ function TransactionForm({ debt, onSubmit, onCancel }: TransactionFormProps) {
       </div>
 
       {error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+        <div className="text-error text-sm bg-error/10 border border-error/20 p-3 rounded-lg">
           {error}
         </div>
       )}
@@ -273,18 +275,18 @@ function DueDateBadge({ dueDate }: { dueDate?: Timestamp }) {
 
   if (diffDays < 0)
     return (
-      <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">
+      <span className="text-xs bg-error/20 text-error border border-error/30 px-2 py-0.5 rounded-full">
         Overdue · {label}
       </span>
     );
   if (diffDays <= 7)
     return (
-      <span className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
+      <span className="text-xs bg-warning/20 text-warning border border-warning/30 px-2 py-0.5 rounded-full">
         Due soon · {label}
       </span>
     );
   return (
-    <span className="text-xs bg-zinc-700/50 text-zinc-400 border border-zinc-600/30 px-2 py-0.5 rounded-full">
+    <span className="text-xs bg-surface-hover text-text-secondary border border-border px-2 py-0.5 rounded-full">
       Due {label}
     </span>
   );
@@ -298,6 +300,7 @@ interface DebtManagerProps {
 
 export function DebtManager({ type }: DebtManagerProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const { debts, loading, refresh } = useDebts(type);
   const { settings } = useUserSettings();
 
@@ -336,6 +339,7 @@ export function DebtManager({ type }: DebtManagerProps) {
     await addDebt(user.uid, { ...data, debtType: type } as DebtFormData);
     await refresh();
     setIsAddOpen(false);
+    toast.success(type === 'i_owe' ? 'Liability added' : 'Debt added');
   };
 
   const handleEdit = async (data: DebtFormData) => {
@@ -343,19 +347,24 @@ export function DebtManager({ type }: DebtManagerProps) {
     await updateDebt(editingDebt.id, data);
     await refresh();
     setEditingDebt(null);
+    toast.success('Changes saved');
   };
 
   const handleDelete = async (id: string) => {
+    // Deleting a debt also removes all its transactions, so keep an explicit
+    // confirmation here — the cascade can't be safely undone with a toast.
     if (!confirm(t.deletePrompt)) return;
     if (!user) return;
     await deleteDebt(id, user.uid);
     await refresh();
+    toast.success('Deleted');
   };
 
   const handleSettle = async (debt: Debt) => {
     if (!confirm(`Mark "${debt.name}" as fully settled?`)) return;
     await markDebtSettled(debt.id);
     await refresh();
+    toast.success(`"${debt.name}" settled`);
   };
 
   const handleTransaction = async (
@@ -385,11 +394,11 @@ export function DebtManager({ type }: DebtManagerProps) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">{t.title}</h1>
+            <h1 className="text-2xl font-bold text-text-primary">{t.title}</h1>
             {totalOutstanding !== null && (
-              <p className="text-sm text-zinc-400 mt-0.5">
+              <p className="text-sm text-text-secondary mt-0.5">
                 {t.totalLabel}{' '}
-                <span className="text-green-400 font-semibold">
+                <span className="text-success font-semibold">
                   {formatCurrency(totalOutstanding, settings?.baseCurrency as Currency)}
                 </span>
               </p>
@@ -398,13 +407,15 @@ export function DebtManager({ type }: DebtManagerProps) {
           <Button onClick={() => setIsAddOpen(true)}>{t.addBtn}</Button>
         </div>
 
-        <div className="flex gap-1 bg-zinc-800/60 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 bg-surface rounded-md p-1 w-fit">
           {(['active', 'settled'] as Tab[]).map((tabName) => (
             <button
               key={tabName}
               onClick={() => setTab(tabName)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                tab === tabName ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200'
+              className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-colors ${
+                tab === tabName
+                  ? 'bg-surface-hover text-text-primary'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               {tabName === 'active'
@@ -416,9 +427,9 @@ export function DebtManager({ type }: DebtManagerProps) {
 
         <Card>
           {loading ? (
-            <div className="text-zinc-400">Loading...</div>
+            <SkeletonList rows={4} rowClassName="h-16" />
           ) : displayedDebts.length === 0 ? (
-            <div className="text-zinc-400 py-4 text-center">
+            <div className="text-text-secondary py-4 text-center">
               {tab === 'active' ? t.emptyActive : t.emptySettled}
             </div>
           ) : (
@@ -429,13 +440,13 @@ export function DebtManager({ type }: DebtManagerProps) {
                     ? ((debt.amount - debt.remainingAmount) / debt.amount) * 100
                     : 100;
                 return (
-                  <div key={debt.id} className="p-4 bg-zinc-800/50 rounded-lg">
+                  <div key={debt.id} className="p-4 bg-surface-hover rounded-lg">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-zinc-100 font-semibold">{debt.name}</span>
+                          <span className="text-text-primary font-semibold">{debt.name}</span>
                           {debt.status === 'settled' && (
-                            <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                            <span className="text-xs bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded-full">
                               Settled
                             </span>
                           )}
@@ -444,29 +455,33 @@ export function DebtManager({ type }: DebtManagerProps) {
 
                         <div className="flex gap-4 mt-1.5 flex-wrap">
                           <div>
-                            <span className="text-zinc-500 text-xs">Remaining: </span>
-                            <span className="text-green-400 font-semibold text-sm">
+                            <span className="text-text-tertiary text-xs">Remaining: </span>
+                            <span className="text-success font-semibold text-sm">
                               {formatCurrency(debt.remainingAmount, debt.currency)}
                             </span>
                           </div>
                           <div>
-                            <span className="text-zinc-500 text-xs">{t.totalBorrowOrLent}</span>
-                            <span className="text-zinc-300 text-sm">
+                            <span className="text-text-tertiary text-xs">
+                              {t.totalBorrowOrLent}
+                            </span>
+                            <span className="text-text-secondary text-sm">
                               {formatCurrency(debt.amount, debt.currency)}
                             </span>
                           </div>
                         </div>
 
                         {debt.amount > 0 && (
-                          <div className="mt-2 h-1.5 bg-zinc-700 rounded-full overflow-hidden w-48 max-w-full">
+                          <div className="mt-2 h-1.5 bg-surface-hover rounded-full overflow-hidden w-48 max-w-full">
                             <div
-                              className="h-full bg-green-500 rounded-full transition-all"
+                              className="h-full bg-success rounded-full transition-all"
                               style={{ width: `${Math.min(100, Math.max(0, paidPct))}%` }}
                             />
                           </div>
                         )}
 
-                        {debt.note && <div className="text-xs text-zinc-500 mt-1">{debt.note}</div>}
+                        {debt.note && (
+                          <div className="text-xs text-text-tertiary mt-1">{debt.note}</div>
+                        )}
                       </div>
 
                       <div className="flex gap-2 flex-wrap shrink-0">
@@ -474,8 +489,8 @@ export function DebtManager({ type }: DebtManagerProps) {
                           onClick={() => setTransactionDebt(debt)}
                           className={`text-xs border px-3 py-1.5 rounded-md transition-all ${
                             debt.status === 'active'
-                              ? 'bg-green-600/10 text-green-400 hover:bg-green-600 hover:text-white border-green-600/30'
-                              : 'text-amber-400 hover:text-amber-300 border-amber-600/30 hover:border-amber-400/50'
+                              ? 'bg-success/10 text-success hover:bg-success hover:text-white border-success/30'
+                              : 'text-warning hover:text-warning border-warning/30 hover:border-warning/50'
                           }`}
                         >
                           {debt.status === 'active' ? 'Record Transaction' : `+ ${t.addBtn}`}
@@ -483,20 +498,20 @@ export function DebtManager({ type }: DebtManagerProps) {
                         {debt.status === 'active' && (
                           <button
                             onClick={() => handleSettle(debt)}
-                            className="text-xs text-zinc-400 hover:text-zinc-100 border border-zinc-700 hover:border-zinc-500 px-3 py-1.5 rounded-md transition-all"
+                            className="text-xs text-text-secondary hover:text-text-primary border border-border hover:border-border px-3 py-1.5 rounded-md transition-all"
                           >
                             Settle
                           </button>
                         )}
                         <button
                           onClick={() => setEditingDebt(debt)}
-                          className="text-xs text-blue-400 hover:text-blue-300 border border-blue-600/30 hover:border-blue-400/50 px-3 py-1.5 rounded-md transition-all"
+                          className="text-xs text-secondary hover:text-secondary border border-primary/30 hover:border-primary/50 px-3 py-1.5 rounded-md transition-all"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(debt.id)}
-                          className="text-xs text-red-400 hover:text-red-300 border border-red-600/30 hover:border-red-400/50 px-3 py-1.5 rounded-md transition-all"
+                          className="text-xs text-error hover:text-error border border-error/30 hover:border-error/50 px-3 py-1.5 rounded-md transition-all"
                         >
                           Delete
                         </button>

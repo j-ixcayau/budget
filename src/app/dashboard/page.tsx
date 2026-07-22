@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AuthGuard } from '@/components/layout';
-import { Card, Button, Modal } from '@/components/ui';
+import { Card, Modal } from '@/components/ui';
 import { NetWorthChart, ExpensesPieChart } from '@/components/charts';
+import { NetWorthHero } from '@/components/dashboard/NetWorthHero';
 import { TransactionForm } from '@/components/forms';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -66,6 +67,15 @@ export default function DashboardPage() {
       .filter((d) => d.status === 'active')
       .reduce((sum, d) => sum + convertToBaseCurrency(d.remainingAmount, d.currency, settings), 0);
 
+    // Month-over-month net worth delta from the most recent prior snapshot.
+    const priorSnapshot = [...snapshots]
+      .filter((s) => s.month < currentMonth)
+      .sort((a, b) => b.month.localeCompare(a.month))[0];
+    const deltaPct =
+      priorSnapshot && priorSnapshot.netWorth !== 0
+        ? ((netWorth - priorSnapshot.netWorth) / Math.abs(priorSnapshot.netWorth)) * 100
+        : null;
+
     return {
       totalAssets,
       totalLiabilities,
@@ -76,8 +86,18 @@ export default function DashboardPage() {
       billStatuses,
       pendingCount,
       totalDebtsOwed,
+      deltaPct,
     };
-  }, [assets, liabilities, transactions, settings, currentMonth, recurringExpenses, owedDebts]);
+  }, [
+    assets,
+    liabilities,
+    transactions,
+    settings,
+    currentMonth,
+    recurringExpenses,
+    owedDebts,
+    snapshots,
+  ]);
 
   const handleLogBill = async (data: TransactionFormData) => {
     if (!user) return;
@@ -91,9 +111,9 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
 
         {!hasCurrentMonthSnapshot && (
-          <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+          <div className="flex items-center gap-3 p-4 bg-warning/10 border border-warning/20 rounded-md">
             <svg
-              className="w-5 h-5 text-amber-400 shrink-0"
+              className="w-5 h-5 text-warning shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -106,8 +126,8 @@ export default function DashboardPage() {
               />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-amber-300">Monthly balance update needed</p>
-              <p className="text-xs text-amber-400/70 mt-0.5">
+              <p className="text-sm font-medium text-warning">Monthly balance update needed</p>
+              <p className="text-xs text-warning/70 mt-0.5">
                 Update your asset balances and generate a snapshot for {currentMonth} to keep your
                 net worth history accurate.
               </p>
@@ -115,13 +135,13 @@ export default function DashboardPage() {
             <div className="flex gap-2 shrink-0">
               <Link
                 href="/assets"
-                className="bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                className="bg-warning/20 text-warning hover:bg-warning/30 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
               >
                 Update Balances
               </Link>
               <Link
                 href="/snapshots"
-                className="bg-zinc-700/50 text-zinc-300 hover:bg-zinc-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                className="bg-surface-hover text-text-secondary hover:bg-surface-raised hover:text-text-primary px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
               >
                 Snapshots
               </Link>
@@ -129,62 +149,49 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card>
-            <div className="text-sm text-white/60">Total Assets</div>
-            <div className="text-2xl font-bold text-emerald-400 font-fira-code">
+        {/* Summary — Net Worth hero + compact secondary metrics */}
+        <NetWorthHero
+          netWorth={stats?.netWorth ?? 0}
+          deltaPct={stats?.deltaPct ?? null}
+          monthBalance={stats ? stats.monthIncome - stats.monthExpenses : 0}
+          debtsOwedToMe={stats?.totalDebtsOwed ?? 0}
+          currency={settings?.baseCurrency}
+          loading={!stats}
+        />
+
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="text-xs font-medium text-text-secondary">Total Assets</div>
+            <div className="mt-1 font-fira-code text-xl font-bold text-success tabular-nums">
               {stats ? formatCurrency(stats.totalAssets, settings?.baseCurrency) : '—'}
             </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-white/60">Total Liabilities</div>
-            <div className="text-2xl font-bold text-red-500 font-fira-code">
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="text-xs font-medium text-text-secondary">Total Liabilities</div>
+            <div className="mt-1 font-fira-code text-xl font-bold text-error tabular-nums">
               {stats ? formatCurrency(stats.totalLiabilities, settings?.baseCurrency) : '—'}
             </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-white/60">Net Worth</div>
-            <div
-              className={`text-2xl font-bold font-fira-code ${stats && stats.netWorth >= 0 ? 'text-blue-400' : 'text-red-500'}`}
-            >
-              {stats ? formatCurrency(stats.netWorth, settings?.baseCurrency) : '—'}
-            </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-white/60">This Month Income</div>
-            <div className="text-2xl font-bold text-emerald-400 font-fira-code">
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="text-xs font-medium text-text-secondary">This Month Income</div>
+            <div className="mt-1 font-fira-code text-xl font-bold text-success tabular-nums">
               {stats ? formatCurrency(stats.monthIncome, settings?.baseCurrency) : '—'}
             </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-white/60">This Month Expenses</div>
-            <div className="text-2xl font-bold text-red-500 font-fira-code">
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-text-secondary">This Month Expenses</div>
+              <Link
+                href="/debts"
+                className="text-xs text-text-tertiary hover:text-text-primary transition-colors"
+              >
+                Debts →
+              </Link>
+            </div>
+            <div className="mt-1 font-fira-code text-xl font-bold text-error tabular-nums">
               {stats ? formatCurrency(stats.monthExpenses, settings?.baseCurrency) : '—'}
             </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-white/60">This Month Balance</div>
-            <div
-              className={`text-2xl font-bold font-fira-code ${stats && stats.monthIncome - stats.monthExpenses >= 0 ? 'text-emerald-400' : 'text-red-500'}`}
-            >
-              {stats
-                ? formatCurrency(stats.monthIncome - stats.monthExpenses, settings?.baseCurrency)
-                : '—'}
-            </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-white/60">Outstanding Debts Owed Me</div>
-            <div className="text-2xl font-bold text-emerald-400 font-fira-code">
-              {stats ? formatCurrency(stats.totalDebtsOwed, settings?.baseCurrency) : '—'}
-            </div>
-            <Link
-              href="/debts"
-              className="text-xs text-white/40 hover:text-white/80 mt-1 inline-block transition-colors"
-            >
-              View debts →
-            </Link>
-          </Card>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -195,7 +202,7 @@ export default function DashboardPage() {
             >
               <div className="space-y-3">
                 {!stats || stats.billStatuses.length === 0 ? (
-                  <div className="text-sm text-zinc-500 py-4 flex flex-col items-center gap-2">
+                  <div className="text-sm text-text-tertiary py-4 flex flex-col items-center gap-2">
                     <svg
                       className="w-8 h-8 opacity-20"
                       fill="none"
@@ -217,27 +224,27 @@ export default function DashboardPage() {
                     const paid = s.currentCyclePaid && !s.isPrevOverdue;
                     const overdue = s.isOverdue || s.isPrevOverdue;
                     const badge = paid
-                      ? { text: 'Paid', cls: 'bg-emerald-500/10 text-emerald-400' }
+                      ? { text: 'Paid', cls: 'bg-success/10 text-success' }
                       : overdue
-                        ? { text: 'Overdue', cls: 'bg-red-500/10 text-red-400' }
-                        : { text: 'Pending', cls: 'bg-amber-500/10 text-amber-400' };
+                        ? { text: 'Overdue', cls: 'bg-error/10 text-error' }
+                        : { text: 'Pending', cls: 'bg-warning/10 text-warning' };
                     return (
                       <div
                         key={bill.id}
-                        className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg group"
+                        className="flex items-center justify-between p-3 bg-surface-hover rounded-md group transition-colors hover:bg-surface-raised"
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-zinc-100 truncate">
+                            <span className="text-sm font-medium text-text-primary truncate">
                               {bill.name}
                             </span>
                             <span
-                              className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${badge.cls}`}
+                              className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}
                             >
                               {badge.text}
                             </span>
                           </div>
-                          <div className="text-xs text-zinc-500">
+                          <div className="text-xs text-text-secondary">
                             Due day: {bill.dayOfMonth} •{' '}
                             {formatCurrency(bill.defaultAmount, bill.currency)}
                           </div>
@@ -245,7 +252,7 @@ export default function DashboardPage() {
                         {!paid && (
                           <button
                             onClick={() => setLogExpense(bill)}
-                            className="shrink-0 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white px-3 py-1 rounded-md text-xs font-medium transition-all"
+                            className="shrink-0 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium transition-all"
                           >
                             Log
                           </button>
@@ -267,7 +274,7 @@ export default function DashboardPage() {
               {settings && stats ? (
                 <ExpensesPieChart transactions={stats.monthTransactions} settings={settings} />
               ) : (
-                <div className="h-64 flex items-center justify-center text-zinc-500">
+                <div className="h-64 flex items-center justify-center text-text-tertiary">
                   Loading...
                 </div>
               )}

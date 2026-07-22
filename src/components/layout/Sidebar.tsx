@@ -70,18 +70,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside
       className={`
-        fixed left-0 top-0 h-full w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-30
+        fixed left-0 top-0 h-full w-64 bg-surface border-r border-border flex flex-col z-30
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
       `}
     >
-      <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-zinc-100">Budget</h1>
-        {/* Close button — mobile only */}
+      <div className="p-6 border-b border-border flex items-center justify-between">
+        <h1 className="text-xl font-bold text-text-primary">Budget</h1>
+        {/* Close button — mobile only · 44x44 hit target, icon stays 20px */}
         <button
           onClick={onClose}
-          className="lg:hidden p-1 text-zinc-400 hover:text-zinc-100 transition-colors"
+          className="lg:hidden flex h-11 w-11 items-center justify-center rounded-md text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
           aria-label="Close menu"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </button>
       </div>
 
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -104,10 +104,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Link
                   href={item.href}
                   onClick={handleNavClick}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-3 rounded-md border-l-[3px] px-3 py-2.5 transition-colors ${
                     isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                      ? 'border-l-primary bg-primary/12 text-text-primary font-semibold'
+                      : 'border-l-transparent text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                   }`}
                 >
                   <svg
@@ -131,10 +132,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-zinc-800">
+      <div className="p-4 border-t border-border">
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2 w-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 w-full text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded-md transition-colors"
         >
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

@@ -83,3 +83,7 @@ next-env.d.ts
 # End of https://www.toptal.com/developers/gitignore/api/nextjs
 
 .firebase/
+
+# transient local build output (produced when building with a temp distDir)
+/tmp/
+/nextout/
