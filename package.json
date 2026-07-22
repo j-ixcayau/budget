@@ -14,8 +14,7 @@
   },
   "dependencies": {
     "firebase": "^12.9.0",
-    "firebase-functions": "^7.0.5",
-    "next": "16.1.6",
+    "next": "16.2.11",
     "pdfjs-dist": "^4.10.38",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -27,7 +26,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.11",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
@@ -36,5 +35,9 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,css,json,md}": "prettier --write"
+  },
+  "overrides": {
+    "sharp": "^0.35.3",
+    "postcss": "^8.5.22"
   }
 }
