@@ -35,9 +35,9 @@ jobs:
       NEXT_PUBLIC_ONESIGNAL_APP_ID: ${{ secrets.NEXT_PUBLIC_ONESIGNAL_APP_ID }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -65,4 +65,22 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
 
       - name: Deploy (hosting + functions + firestore)
-        run: npx --yes firebase-tools@latest deploy --project ixca-bugdet --non-interactive --force
+        # The SSR framework function can intermittently return HTTP 409
+        # ("unable to queue the operation") when a prior Cloud Functions
+        # operation is still settling. Retry a couple of times; firebase
+        # deploy is idempotent and skips what's already up to date.
+        run: |
+          set -e
+          for attempt in 1 2 3; do
+            echo "::group::firebase deploy (attempt $attempt)"
+            if npx --yes firebase-tools@latest deploy \
+                 --project ixca-bugdet --non-interactive --force; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Deploy attempt $attempt failed; waiting 45s before retry..."
+            sleep 45
+          done
+          echo "Deploy failed after 3 attempts"
+          exit 1
