@@ -7,6 +7,7 @@ import { useUserSettings } from '@/hooks/useFirestore';
 import { useAuth } from '@/hooks/useAuth';
 import { updateUserSettings } from '@/lib/firestore';
 import { CURRENCY_OPTIONS } from '@/lib/constants';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import type { Currency } from '@/types';
 
 export default function SettingsPage() {
@@ -110,6 +111,8 @@ export default function SettingsPage() {
             </div>
           )}
         </Card>
+
+        <NotificationSettings />
 
         <Card title="About">
           <div className="text-text-secondary text-sm space-y-2">
