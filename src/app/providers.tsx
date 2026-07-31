@@ -2,11 +2,14 @@
 
 import { AuthProvider } from '@/hooks/useAuth';
 import { ToastProvider } from '@/components/ui';
+import { OneSignalProvider } from '@/components/OneSignalProvider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <OneSignalProvider>{children}</OneSignalProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

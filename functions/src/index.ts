@@ -143,16 +143,17 @@ export const logShortcutTransaction = onRequest(async (request, response) => {
 export const checkRecurringExpenses = onSchedule(
   {
     schedule: '0 10 * * *',
-    secrets: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'],
+    secrets: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'ONESIGNAL_APP_ID', 'ONESIGNAL_API_KEY'],
     timeZone: 'America/Guatemala', // Optional: Making the timezone explicit
   },
   async (event) => {
     logger.info('Starting daily recurring expense check');
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const appUrl = process.env.APP_URL || 'https://budget.ixcayau.com';
+    const oneSignalEnabled = !!(process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY);
 
-    if (!botToken) {
-      logger.warn('TELEGRAM_BOT_TOKEN not configured, skipping notifications');
+    if (!botToken && !oneSignalEnabled) {
+      logger.warn('No notification channel configured (Telegram or OneSignal); skipping');
       return;
     }
 
@@ -164,10 +165,13 @@ export const checkRecurringExpenses = onSchedule(
       for (const userDoc of usersSnapshot.docs) {
         const userId = userDoc.id;
         const userData = userDoc.data();
-        const userChatId = userData.telegramChatId || process.env.TELEGRAM_CHAT_ID;
+        // Telegram needs a chat id; OneSignal targets the user by external_id (= uid).
+        const telegramChatId = botToken
+          ? userData.telegramChatId || process.env.TELEGRAM_CHAT_ID
+          : undefined;
 
-        if (!userChatId) {
-          logger.debug(`Skipping user ${userId}: No telegramChatId configured`);
+        if (!telegramChatId && !oneSignalEnabled) {
+          logger.debug(`Skipping user ${userId}: no delivery channel available`);
           continue;
         }
 
@@ -182,7 +186,14 @@ export const checkRecurringExpenses = onSchedule(
           .get();
 
         if (snapshotQuery.empty) {
-          await sendBalanceReminderNotification(botToken, userChatId, currentMonth, appUrl);
+          if (botToken && telegramChatId)
+            await sendBalanceReminderNotification(botToken, telegramChatId, currentMonth, appUrl);
+          await sendOneSignalPush(
+            userId,
+            'Monthly balance update',
+            `It's a new month (${currentMonth}). Update your balances and generate a snapshot to keep your net worth accurate.`,
+            `${appUrl}/assets`
+          );
         }
 
         // ── Daily "nothing logged" nudge ─────────────────────────────────────
@@ -197,14 +208,28 @@ export const checkRecurringExpenses = onSchedule(
           .get();
         const hasRecentExpense = recentExpenseSnap.docs.some((d) => d.data().type === 'expense');
         if (!hasRecentExpense) {
-          await sendNoExpenseNudge(botToken, userChatId, appUrl);
+          if (botToken && telegramChatId)
+            await sendNoExpenseNudge(botToken, telegramChatId, appUrl);
+          await sendOneSignalPush(
+            userId,
+            'Spending check',
+            "Logged anything lately? Jot down recent expenses while they're fresh.",
+            `${appUrl}/transactions`
+          );
         }
 
         // ── Monthly statement-check reminder ─────────────────────────────────
         // Early each month, nudge the user to reconcile last month's card
         // statement against what they logged (catches anything missed).
         if (now.getDate() === 3) {
-          await sendStatementCheckReminder(botToken, userChatId, appUrl);
+          if (botToken && telegramChatId)
+            await sendStatementCheckReminder(botToken, telegramChatId, appUrl);
+          await sendOneSignalPush(
+            userId,
+            'Statement check',
+            "New month — upload last month's card statement to catch anything you missed.",
+            `${appUrl}/import`
+          );
         }
 
         // Get active recurring expenses
@@ -242,7 +267,15 @@ export const checkRecurringExpenses = onSchedule(
         const upcomingBills = getBillsToNotify(recurringExpenses, recentTransactions, now);
 
         if (upcomingBills.length > 0) {
-          await sendTelegramNotification(botToken, userChatId, upcomingBills, appUrl);
+          if (botToken && telegramChatId)
+            await sendTelegramNotification(botToken, telegramChatId, upcomingBills, appUrl);
+          const billNames = upcomingBills.map((b) => b.name).join(', ');
+          await sendOneSignalPush(
+            userId,
+            'Bills to log',
+            `Don't forget to log: ${billNames}`,
+            `${appUrl}/dashboard`
+          );
         }
       }
     } catch (error: any) {
@@ -305,6 +338,46 @@ async function sendTelegramMessage(
     }
   } catch (error: any) {
     logger.error(`Failed to send ${context}`, { chatId, error: error.message });
+  }
+}
+
+/**
+ * Sends a web push via OneSignal, targeting the user by External ID (= Firebase
+ * uid). No-ops when ONESIGNAL_APP_ID / ONESIGNAL_API_KEY aren't configured, and
+ * tolerates the "no subscribers" case for users who haven't opted in.
+ */
+async function sendOneSignalPush(externalId: string, title: string, message: string, url: string) {
+  const appId = process.env.ONESIGNAL_APP_ID;
+  const apiKey = process.env.ONESIGNAL_API_KEY;
+  if (!appId || !apiKey) return;
+
+  try {
+    const res = await fetch('https://api.onesignal.com/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Key ${apiKey}`,
+      },
+      body: JSON.stringify({
+        app_id: appId,
+        target_channel: 'push',
+        include_aliases: { external_id: [externalId] },
+        headings: { en: title },
+        contents: { en: message },
+        url,
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      // 400 "no subscribers" is expected for users who haven't enabled push.
+      logger.warn('OneSignal push not delivered', {
+        externalId,
+        status: res.status,
+        body: errText,
+      });
+    }
+  } catch (error: any) {
+    logger.error('Failed to send OneSignal push', { externalId, error: error.message });
   }
 }
 
