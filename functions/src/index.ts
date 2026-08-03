@@ -186,14 +186,15 @@ export const checkRecurringExpenses = onSchedule(
           .get();
 
         if (snapshotQuery.empty) {
-          if (botToken && telegramChatId)
-            await sendBalanceReminderNotification(botToken, telegramChatId, currentMonth, appUrl);
-          await sendOneSignalPush(
+          // Push first; fall back to Telegram only if it wasn't delivered.
+          const pushed = await sendOneSignalPush(
             userId,
             'Monthly balance update',
             `It's a new month (${currentMonth}). Update your balances and generate a snapshot to keep your net worth accurate.`,
             `${appUrl}/assets`
           );
+          if (!pushed && botToken && telegramChatId)
+            await sendBalanceReminderNotification(botToken, telegramChatId, currentMonth, appUrl);
         }
 
         // ── Daily "nothing logged" nudge ─────────────────────────────────────
@@ -208,28 +209,28 @@ export const checkRecurringExpenses = onSchedule(
           .get();
         const hasRecentExpense = recentExpenseSnap.docs.some((d) => d.data().type === 'expense');
         if (!hasRecentExpense) {
-          if (botToken && telegramChatId)
-            await sendNoExpenseNudge(botToken, telegramChatId, appUrl);
-          await sendOneSignalPush(
+          const pushed = await sendOneSignalPush(
             userId,
             'Spending check',
             "Logged anything lately? Jot down recent expenses while they're fresh.",
             `${appUrl}/transactions`
           );
+          if (!pushed && botToken && telegramChatId)
+            await sendNoExpenseNudge(botToken, telegramChatId, appUrl);
         }
 
         // ── Monthly statement-check reminder ─────────────────────────────────
         // Early each month, nudge the user to reconcile last month's card
         // statement against what they logged (catches anything missed).
         if (now.getDate() === 3) {
-          if (botToken && telegramChatId)
-            await sendStatementCheckReminder(botToken, telegramChatId, appUrl);
-          await sendOneSignalPush(
+          const pushed = await sendOneSignalPush(
             userId,
             'Statement check',
             "New month — upload last month's card statement to catch anything you missed.",
             `${appUrl}/import`
           );
+          if (!pushed && botToken && telegramChatId)
+            await sendStatementCheckReminder(botToken, telegramChatId, appUrl);
         }
 
         // Get active recurring expenses
@@ -267,15 +268,15 @@ export const checkRecurringExpenses = onSchedule(
         const upcomingBills = getBillsToNotify(recurringExpenses, recentTransactions, now);
 
         if (upcomingBills.length > 0) {
-          if (botToken && telegramChatId)
-            await sendTelegramNotification(botToken, telegramChatId, upcomingBills, appUrl);
           const billNames = upcomingBills.map((b) => b.name).join(', ');
-          await sendOneSignalPush(
+          const pushed = await sendOneSignalPush(
             userId,
             'Bills to log',
             `Don't forget to log: ${billNames}`,
             `${appUrl}/dashboard`
           );
+          if (!pushed && botToken && telegramChatId)
+            await sendTelegramNotification(botToken, telegramChatId, upcomingBills, appUrl);
         }
       }
     } catch (error: any) {
@@ -346,10 +347,21 @@ async function sendTelegramMessage(
  * uid). No-ops when ONESIGNAL_APP_ID / ONESIGNAL_API_KEY aren't configured, and
  * tolerates the "no subscribers" case for users who haven't opted in.
  */
-async function sendOneSignalPush(externalId: string, title: string, message: string, url: string) {
+/**
+ * Sends a web push via OneSignal, targeting the user by External ID (= Firebase
+ * uid). Returns true only if the push was actually delivered to at least one
+ * subscription — so callers can fall back to another channel when it wasn't.
+ * No-ops (returns false) when ONESIGNAL_APP_ID / ONESIGNAL_API_KEY are unset.
+ */
+async function sendOneSignalPush(
+  externalId: string,
+  title: string,
+  message: string,
+  url: string
+): Promise<boolean> {
   const appId = process.env.ONESIGNAL_APP_ID;
   const apiKey = process.env.ONESIGNAL_API_KEY;
-  if (!appId || !apiKey) return;
+  if (!appId || !apiKey) return false;
 
   try {
     const res = await fetch('https://api.onesignal.com/notifications', {
@@ -367,17 +379,29 @@ async function sendOneSignalPush(externalId: string, title: string, message: str
         url,
       }),
     });
-    if (!res.ok) {
-      const errText = await res.text();
-      // 400 "no subscribers" is expected for users who haven't enabled push.
+
+    const bodyText = await res.text();
+    let recipients = 0;
+    try {
+      recipients = JSON.parse(bodyText)?.recipients ?? 0;
+    } catch {
+      // non-JSON body; treat as not delivered
+    }
+
+    if (!res.ok || recipients < 1) {
+      // Expected when the user hasn't enabled push yet ("not subscribed").
       logger.warn('OneSignal push not delivered', {
         externalId,
         status: res.status,
-        body: errText,
+        recipients,
+        body: bodyText,
       });
+      return false;
     }
+    return true;
   } catch (error: any) {
     logger.error('Failed to send OneSignal push', { externalId, error: error.message });
+    return false;
   }
 }
 
