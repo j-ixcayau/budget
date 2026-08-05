@@ -24,16 +24,20 @@ export function OneSignalProvider({ children }: { children: ReactNode }) {
     startedRef.current = true;
     OneSignal.init({
       appId: APP_ID,
-      // Worker is hosted under /onesignal/ to avoid clashing with the
-      // Firebase SSR routes at the site root.
-      serviceWorkerParam: { scope: '/onesignal/' },
-      serviceWorkerPath: 'onesignal/OneSignalSDKWorker.js',
+      // Service worker is served from the site root (public/OneSignalSDKWorker.js),
+      // which is where the OneSignal SDK requests it by default.
       allowLocalhostAsSecureOrigin: true,
     })
       .then(() => setReady(true))
       .catch((err) => {
         console.error('OneSignal init failed', err);
-        Sentry.captureException(err, { tags: { feature: 'push', phase: 'init' } });
+        // Expected on browsers that can't do web push (e.g. iOS Safari not yet
+        // installed to the Home Screen) — don't treat those as errors in Sentry.
+        const msg = String((err as Error)?.message ?? err);
+        const expected = /not support|unsupported|can only be used/i.test(msg);
+        if (!expected) {
+          Sentry.captureException(err, { tags: { feature: 'push', phase: 'init' } });
+        }
       });
   }, []);
 
