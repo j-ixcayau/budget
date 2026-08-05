@@ -1,37 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import OneSignal from 'react-onesignal';
 import { Card, Button } from '@/components/ui';
 
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 
-type PushState = 'unconfigured' | 'unsupported' | 'default' | 'granted' | 'denied';
-
-function currentState(): PushState {
-  if (!APP_ID) return 'unconfigured';
-  if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
-  return Notification.permission as PushState;
-}
-
 export function NotificationSettings() {
-  const [state, setState] = useState<PushState>('unconfigured');
+  const [supported, setSupported] = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
+  const [denied, setDenied] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    setState(currentState());
+  // Read the real subscription state from OneSignal (not just the browser
+  // permission) — a device can be permission-"granted" yet still Unsubscribed.
+  const refresh = useCallback(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setSupported(false);
+      return;
+    }
+    setDenied(Notification.permission === 'denied');
+    try {
+      setSubscribed(Boolean(OneSignal?.User?.PushSubscription?.optedIn));
+    } catch {
+      setSubscribed(false);
+    }
   }, []);
+
+  useEffect(() => {
+    refresh();
+    // Update when the SDK finishes initializing / the subscription flips.
+    try {
+      OneSignal.User.PushSubscription.addEventListener('change', refresh);
+      OneSignal.Notifications.addEventListener('permissionChange', refresh);
+    } catch {
+      // SDK not ready yet; the enable() flow will refresh on demand.
+    }
+  }, [refresh]);
 
   const enable = async () => {
     setBusy(true);
     try {
-      // Shows the native permission prompt, then opts this device into push.
+      // Prompt for permission (resolves instantly if already granted), then
+      // opt this device into push so it becomes a Subscribed subscription.
       await OneSignal.Notifications.requestPermission();
       await OneSignal.User.PushSubscription.optIn();
     } catch (err) {
       console.error('Failed to enable push notifications', err);
     } finally {
-      setState(currentState());
+      refresh();
       setBusy(false);
     }
   };
@@ -43,37 +60,29 @@ export function NotificationSettings() {
           Get bill reminders and monthly balance nudges as push notifications on this device.
         </p>
 
-        {state === 'granted' && (
-          <p className="flex items-center gap-2 font-medium text-success">
-            <span className="inline-block h-2 w-2 rounded-full bg-success" />
-            Enabled on this device
-          </p>
-        )}
-
-        {state === 'default' && (
-          <Button onClick={enable} disabled={busy}>
-            {busy ? 'Enabling…' : 'Enable notifications'}
-          </Button>
-        )}
-
-        {state === 'denied' && (
+        {!APP_ID ? (
           <p className="text-text-tertiary">
-            Notifications are blocked for this site. Enable them in your browser’s site settings,
-            then reload.
+            Push notifications aren’t configured for this app yet.
           </p>
-        )}
-
-        {state === 'unsupported' && (
+        ) : !supported ? (
           <p className="text-text-tertiary">
             This browser doesn’t support push notifications. On iPhone, add the app to your Home
             Screen first, then enable them here.
           </p>
-        )}
-
-        {state === 'unconfigured' && (
-          <p className="text-text-tertiary">
-            Push notifications aren’t configured for this app yet.
+        ) : subscribed ? (
+          <p className="flex items-center gap-2 font-medium text-success">
+            <span className="inline-block h-2 w-2 rounded-full bg-success" />
+            Enabled on this device
           </p>
+        ) : denied ? (
+          <p className="text-text-tertiary">
+            Notifications are blocked for this site. Enable them in your browser’s site settings,
+            then reload.
+          </p>
+        ) : (
+          <Button onClick={enable} disabled={busy}>
+            {busy ? 'Enabling…' : 'Enable notifications'}
+          </Button>
         )}
       </div>
     </Card>
