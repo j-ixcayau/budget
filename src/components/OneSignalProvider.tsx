@@ -53,5 +53,18 @@ export function OneSignalProvider({ children }: { children: ReactNode }) {
     }
   }, [ready, user]);
 
+  // If the browser has already granted notification permission, make sure this
+  // device is opted in to push. This is silent (no prompt, no user gesture
+  // needed) and re-subscribes returning users or devices that ended up
+  // "Unsubscribed" after an earlier failed attempt.
+  useEffect(() => {
+    if (!APP_ID || !ready) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    OneSignal.User.PushSubscription.optIn().catch((err) =>
+      Sentry.captureException(err, { tags: { feature: 'push', phase: 'auto-optin' } })
+    );
+  }, [ready]);
+
   return <>{children}</>;
 }
