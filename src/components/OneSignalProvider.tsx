@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import OneSignal from 'react-onesignal';
+import * as Sentry from '@sentry/nextjs';
 import { useAuth } from '@/hooks/useAuth';
 
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
@@ -30,14 +31,19 @@ export function OneSignalProvider({ children }: { children: ReactNode }) {
       allowLocalhostAsSecureOrigin: true,
     })
       .then(() => setReady(true))
-      .catch((err) => console.error('OneSignal init failed', err));
+      .catch((err) => {
+        console.error('OneSignal init failed', err);
+        Sentry.captureException(err, { tags: { feature: 'push', phase: 'init' } });
+      });
   }, []);
 
   // Keep External ID in sync with the Firebase session.
   useEffect(() => {
     if (!APP_ID || !ready) return;
     if (user) {
-      OneSignal.login(user.uid).catch(() => {});
+      OneSignal.login(user.uid).catch((err) =>
+        Sentry.captureException(err, { tags: { feature: 'push', phase: 'login' } })
+      );
     } else {
       OneSignal.logout().catch(() => {});
     }

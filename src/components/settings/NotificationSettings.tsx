@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import OneSignal from 'react-onesignal';
+import * as Sentry from '@sentry/nextjs';
 import { Card, Button } from '@/components/ui';
 
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
@@ -40,13 +41,31 @@ export function NotificationSettings() {
 
   const enable = async () => {
     setBusy(true);
+    Sentry.addBreadcrumb({ category: 'push', message: 'enable clicked', level: 'info' });
     try {
       // Prompt for permission (resolves instantly if already granted), then
       // opt this device into push so it becomes a Subscribed subscription.
       await OneSignal.Notifications.requestPermission();
       await OneSignal.User.PushSubscription.optIn();
+
+      // Silent failure: opt-in resolved but no subscription was actually
+      // created — this is what leaves users "Unsubscribed" in OneSignal.
+      const optedIn = Boolean(OneSignal?.User?.PushSubscription?.optedIn);
+      if (!optedIn) {
+        Sentry.captureMessage('Push opt-in did not create a subscription', {
+          level: 'warning',
+          tags: { feature: 'push', phase: 'opt-in' },
+          extra: {
+            nativePermission: typeof Notification !== 'undefined' ? Notification.permission : 'n/a',
+            subscriptionId: OneSignal?.User?.PushSubscription?.id,
+            onesignalId: OneSignal?.User?.onesignalId,
+            externalId: OneSignal?.User?.externalId,
+          },
+        });
+      }
     } catch (err) {
       console.error('Failed to enable push notifications', err);
+      Sentry.captureException(err, { tags: { feature: 'push', phase: 'subscribe' } });
     } finally {
       refresh();
       setBusy(false);
